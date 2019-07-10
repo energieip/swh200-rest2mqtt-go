@@ -1,0 +1,5 @@
+#!/bin/bash
+
+systemctl daemon-reload
+systemctl enable energieip-swh200-rest2mqtt.service
+systemctl restart energieip-swh200-rest2mqtt.service

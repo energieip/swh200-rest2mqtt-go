@@ -1,0 +1,15 @@
+Source: COMPONENT
+Maintainer: Amandine Drebes <amandine@energie-ip.com>
+Section: misc
+Priority: optional
+Standards-Version: 3.9.6
+Build-Depends:
+ golang-go (>= 1.9)
+Homepage: https://www.energie-ip.com/
+Vcs-Git: https://github.com/energieip/swh200-rest2mqtt-go.git
+PackageName: COMPONENT
+Architecture: amd64
+Depends: binutils, gzip, bzip2, xz-utils, mosquitto
+Description: Present REST devices as MQTT devices
+Package: COMPONENT
+Version: VERSION

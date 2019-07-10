@@ -1,0 +1,8 @@
+package: github.com/energieip/swh200-rest2mqtt-go
+homepage: https://github.com/energieip/swh200-rest2mqtt-go
+license: Apache v2.0
+owners:
+- name: Amandine Drebes
+  email: amandine@energie-ip.com
+  homepage: https://energie-ip.com
+import: []

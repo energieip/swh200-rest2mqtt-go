@@ -1,0 +1,141 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+      "title": "GTB Swagger",
+      "description": "GTB server API unversioned",
+      "contact": {
+        "email": "developer@energie-ip.com"
+      },
+      "version": "0.0"
+    },
+    "paths": {
+      "/functions": {
+        "get": {
+          "summary": "getFunctions",
+          "description": "Return the list of available API functions",
+          "operationId": "GetFunctions",
+          "parameters": [],
+          "responses": {
+            "200": {
+              "description": "sucessful operation",
+              "headers": {},
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/getFunctionsResponse"
+                  }
+                }
+              }
+            },
+            "default": {
+              "description": "unexpected error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            }
+          },
+          "deprecated": false
+        }
+      },
+      "/driver/new": {
+        "post": {
+          "summary": "Add new driver",
+          "description": "Add new driver",
+          "operationId": "NewDriver",
+          "parameters": [],
+          "requestBody": {
+            "description": "Driver Description",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Driver"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "description": "sucessful operation",
+              "headers": {},
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/getFunctionsResponse"
+                  }
+                }
+              }
+            },
+            "default": {
+              "description": "unexpected error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            }
+          },
+          "deprecated": false
+        }
+      }
+    },
+    "components": {
+      "schemas": {
+        "Error": {
+          "title": "Error",
+          "required": [
+            "code",
+            "message"
+          ],
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "message": {
+              "type": "string"
+            }
+          }
+        },
+        "Driver": {
+            "title": "Driver",
+            "required": [
+              "ip",
+              "mac"
+            ],
+            "type": "object",
+            "properties": {
+              "ip": {
+                "type": "string",
+                "description": "Driver IP"
+              },
+              "mac": {
+                "type": "string",
+                "description": "Driver Mac Address"
+              }
+            }
+        },
+        "getFunctionsResponse": {
+          "title": "getFunctionsResponse",
+          "type": "object",
+          "properties": {
+            "functions": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "list of available functions"
+            }
+          }
+        }
+      }
+    },
+    "tags": []
+  }

@@ -1,0 +1,104 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "GTB Switch API unversioned",
+        "version": "0.0",
+        "title": "Switch Swagger",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "email": "developer@energie-ip.com"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        }
+    },
+    "schemes":[
+        "https"
+    ],
+    "paths":{
+        "/versions":{
+            "get":{
+                "summary": "Return Supported API Versions",
+                "description": "Return Supported API Versions",
+                "operationId": "getAPIs",
+                "produces":[
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "sucessful operation",
+                        "schema":{
+                            "type": "object",
+                            "properties": {
+                                "versions": {
+                                    "description": "list of available APIs",
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "unexpected error",
+                        "schema": {
+                          "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/functions":{
+            "get":{
+                "summary": "Return the list of available API functions",
+                "description": "Return the list of available API functions",
+                "operationId": "getFunctions",
+                "produces":[
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "sucessful operation",
+                        "schema":{
+                            "type": "object",
+                            "properties": {
+                                "functions": {
+                                    "description": "list of available functions",
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "unexpected error",
+                        "schema": {
+                          "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "Error": {
+            "required": [
+              "code",
+              "message"
+            ],
+            "properties": {
+              "code": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+        }
+    }
+}

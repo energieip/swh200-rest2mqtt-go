@@ -1,0 +1,15 @@
+[Unit]
+Description=REST to MQTT service
+After=mosquitto.service network-online.target
+Wants=network-online.target
+PartOf=network-online.target mosquitto.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/energieip-swh200-rest2mqtt -c /etc/energieip-swh200-rest2mqtt/config.json
+KillMode=process
+PrivateTmp=true
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
