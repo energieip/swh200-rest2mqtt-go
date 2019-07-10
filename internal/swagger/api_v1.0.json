@@ -62,7 +62,6 @@
             "200": {
               "description": "sucessful operation",
               "headers": {}
-              }
             },
             "default": {
               "description": "unexpected error",
