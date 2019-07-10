@@ -61,13 +61,7 @@
           "responses": {
             "200": {
               "description": "sucessful operation",
-              "headers": {},
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "$ref": "#/components/schemas/getFunctionsResponse"
-                  }
-                }
+              "headers": {}
               }
             },
             "default": {
