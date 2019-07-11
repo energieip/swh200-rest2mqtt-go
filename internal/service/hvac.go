@@ -91,7 +91,6 @@ func (s *Service) receivedHvacSetup(setup dhvac.HvacSetup) {
 	}
 
 	if hvac.IsConfigured {
-		rlog.Error("==== isConfig? ", hvac.IsConfigured)
 		return
 	}
 
@@ -105,6 +104,7 @@ func (s *Service) receivedHvacSetup(setup dhvac.HvacSetup) {
 		rlog.Error("Cannot apply init config: ", err.Error())
 		return
 	}
+	hvac.DumpFrequency = setup.DumpFrequency
 	hvac.IsConfigured = true
 	s.hvacs.Set(hvac.Mac, hvac)
 }
