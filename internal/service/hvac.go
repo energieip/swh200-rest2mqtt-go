@@ -104,6 +104,10 @@ func (s *Service) receivedHvacSetup(setup dhvac.HvacSetup) {
 		rlog.Error("Cannot apply init config: ", err.Error())
 		return
 	}
+	if setup.Group != nil {
+		hvac.Group = *setup.Group
+	}
+	hvac.Label = setup.Label
 	hvac.DumpFrequency = setup.DumpFrequency
 	hvac.IsConfigured = true
 	s.hvacs.Set(hvac.Mac, hvac)
@@ -122,6 +126,14 @@ func (s *Service) receivedHvacUpdate(conf dhvac.HvacConf) {
 	if !hvac.IsConfigured {
 		return
 	}
+
+	if conf.Group != nil {
+		hvac.Group = *conf.Group
+	}
+	if conf.Label != nil {
+		hvac.Label = conf.Label
+	}
+	s.hvacs.Set(hvac.Mac, hvac)
 
 	// token, err := s.hvacLogin(hvac.IP)
 	// if err != nil {
