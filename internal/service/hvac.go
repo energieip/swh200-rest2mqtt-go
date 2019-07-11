@@ -63,7 +63,7 @@ func (s *Service) sendDump(status dhvac.Hvac) {
 		s.local.SendCommand("/read/hvac/"+status.Mac+"/"+pconst.UrlStatus, dump)
 		return
 	}
-	status.DevicePower = 10
+	status.LinePower = 10
 	status.SpaceCO2 = info.AirRegister.SpaceCO2
 	status.OADamper = info.AirRegister.OADamper
 	status.OccManCmd1 = info.Regulation.OccManCmd
