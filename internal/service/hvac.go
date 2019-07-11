@@ -71,6 +71,21 @@ func (s *Service) sendDump(status dhvac.Hvac) {
 	status.HeatCool1 = info.Regulation.HeatCool
 	status.CoolOutput1 = info.Regulation.CoolOuput
 
+	infoSetpoint, err := s.getHvacSetpoints(status.IP, token)
+	if err != nil {
+		status.Error = 2
+		s.hvacs.Set(status.Mac, status)
+		dump, _ := status.ToJSON()
+		s.local.SendCommand("/read/hvac/"+status.Mac+"/"+pconst.UrlStatus, dump)
+		return
+	}
+	status.SetpointHeatInoccupiedHeat1 = int(infoSetpoint.SetpointUnoccHeat * 10)
+	status.SetpointInoccupiedCool1 = int(infoSetpoint.SetpointUnoccCool * 10)
+	status.SetpointOccupiedCool1 = int(infoSetpoint.SetpointOccCool * 10)
+	status.SetpointOccupiedHeat1 = int(infoSetpoint.SetpointOccHeat * 10)
+	status.SetpointStandbyCool1 = int(infoSetpoint.SetpointStanbyCool * 10)
+	status.SetpointStandbyHeat1 = int(infoSetpoint.SetpointStanbyHeat * 10)
+
 	s.hvacs.Set(status.Mac, status)
 	s.driversSeen.Set(status.Mac, time.Now().UTC())
 
@@ -157,7 +172,6 @@ func (s *Service) newHvac(new interface{}) error {
 	if err != nil || info == nil {
 		return err
 	}
-	rlog.Info("====== get info ", *info)
 	hvac := dhvac.Hvac{
 		FullMac:         &driver.Mac,
 		SwitchMac:       s.Mac,
@@ -205,7 +219,6 @@ func (s *Service) hvacGetStatus(IP string, token string) (*core.HvacLoop1, error
 }
 
 func (s *Service) hvacGetVersion(IP string, token string) (*core.HvacSysInfo, error) {
-	rlog.Info("===== IP %v token %v", IP, token)
 	url := "https://" + IP + "/api/systemInfos"
 
 	req, _ := http.NewRequest("GET", url, nil)
@@ -224,7 +237,6 @@ func (s *Service) hvacGetVersion(IP string, token string) (*core.HvacSysInfo, er
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
-	rlog.Info("=== getversion body: ", string(body))
 
 	info := core.HvacSysInfo{}
 	err = json.Unmarshal(body, &info)
@@ -261,10 +273,8 @@ func (s *Service) hvacLogin(IP string) (string, error) {
 		return "", err
 	}
 	defer resp.Body.Close()
-	rlog.Info("response Status:", resp.StatusCode)
 	if resp.StatusCode != 200 {
-		rlog.Info("=== get resp.Status ", resp.StatusCode)
-		return "", nil
+		return "", NewError("Incorrect Status code")
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
@@ -276,6 +286,38 @@ func (s *Service) hvacLogin(IP string) (string, error) {
 		return "", err
 	}
 	return auth.AccessToken, nil
+}
+
+func (s *Service) getHvacSetpoints(IP string, token string) (*core.HvacSetPoints, error) {
+	url := "https://" + IP + "/api/setup/hvac/setpoint/loop1"
+
+	req, _ := http.NewRequest("GET", url, nil)
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("authorization", "Bearer "+token)
+	transCfg := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+	}
+	client := &http.Client{Transport: transCfg}
+	resp, err := client.Do(req)
+
+	if err != nil {
+		rlog.Error(err.Error())
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return nil, NewError("Incorrect Status code")
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+
+	status := core.HvacSetPoints{}
+	err = json.Unmarshal(body, &status)
+	if err != nil {
+		rlog.Error("Cannot parse body: " + err.Error())
+		return nil, err
+	}
+	return &status, nil
 }
 
 func (s *Service) hvacInit(setup dhvac.HvacSetup, IP string, token string) error {

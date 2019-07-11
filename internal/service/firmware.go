@@ -19,6 +19,19 @@ const (
 	DefaultTimerDump = 1000
 )
 
+type systemError struct {
+	s string
+}
+
+func (e *systemError) Error() string {
+	return e.s
+}
+
+// NewError raise an error
+func NewError(text string) error {
+	return &systemError{text}
+}
+
 //Service content
 type Service struct {
 	local        net.ServerNetwork //local broker for drivers
