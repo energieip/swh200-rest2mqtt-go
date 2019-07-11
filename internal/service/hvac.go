@@ -79,8 +79,8 @@ func (s *Service) sendDump(status dhvac.Hvac) {
 		s.local.SendCommand("/read/hvac/"+status.Mac+"/"+pconst.UrlStatus, dump)
 		return
 	}
-	status.SetpointHeatInoccupiedHeat1 = int(infoSetpoint.SetpointUnoccHeat * 10)
-	status.SetpointInoccupiedCool1 = int(infoSetpoint.SetpointUnoccCool * 10)
+	status.SetpointUnoccupiedHeat1 = int(infoSetpoint.SetpointUnoccHeat * 10)
+	status.SetpointUnoccupiedCool1 = int(infoSetpoint.SetpointUnoccCool * 10)
 	status.SetpointOccupiedCool1 = int(infoSetpoint.SetpointOccCool * 10)
 	status.SetpointOccupiedHeat1 = int(infoSetpoint.SetpointOccHeat * 10)
 	status.SetpointStandbyCool1 = int(infoSetpoint.SetpointStanbyCool * 10)
