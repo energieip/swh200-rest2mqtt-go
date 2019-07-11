@@ -70,6 +70,9 @@ func (s *Service) sendDump(status dhvac.Hvac) {
 	status.SpaceTemp1 = info.Regulation.SpaceTemp
 	status.HeatCool1 = info.Regulation.HeatCool
 	status.CoolOutput1 = info.Regulation.CoolOuput
+	status.EffectSetPoint1 = info.Regulation.EffectifSetPoint
+	status.Shift = info.Regulation.OffsetTemp
+	status.HoldOff1 = info.Regulation.WindowHoldOff
 
 	infoSetpoint, err := s.getHvacSetpoints(status.IP, token)
 	if err != nil {
