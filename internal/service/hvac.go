@@ -89,6 +89,7 @@ func (s *Service) sendDump(status dhvac.Hvac) {
 	status.SetpointOccupiedHeat1 = int(infoSetpoint.SetpointOccHeat * 10)
 	status.SetpointStandbyCool1 = int(infoSetpoint.SetpointStanbyCool * 10)
 	status.SetpointStandbyHeat1 = int(infoSetpoint.SetpointStanbyHeat * 10)
+	status.Error = 0
 
 	s.hvacs.Set(status.Mac, status)
 	s.driversSeen.Set(status.Mac, time.Now().UTC())
