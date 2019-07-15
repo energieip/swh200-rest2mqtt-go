@@ -328,27 +328,27 @@ func (s *Service) getHvacSetpoints(IP string, token string) (*core.HvacSetPoints
 func (s *Service) hvacInit(setup dhvac.HvacSetup, IP string, token string) error {
 	url := "https://" + IP + "/api/setup/hvac/setpoint/loop1"
 
-	OccCool := float32(20)
+	OccCool := float32(19)
 	if setup.SetpointCoolOccupied != nil {
 		OccCool = float32(*setup.SetpointCoolOccupied) / 10
 	}
-	OccHeat := float32(20)
+	OccHeat := float32(26)
 	if setup.SetpointHeatOccupied != nil {
 		OccHeat = float32(*setup.SetpointHeatOccupied) / 10
 	}
-	UnoccHeat := float32(20)
+	UnoccHeat := float32(30)
 	if setup.SetpointHeatInoccupied != nil {
 		UnoccHeat = float32(*setup.SetpointHeatInoccupied) / 10
 	}
-	UnoccCool := float32(20)
+	UnoccCool := float32(15)
 	if setup.SetpointCoolInoccupied != nil {
 		UnoccCool = float32(*setup.SetpointCoolInoccupied) / 10
 	}
-	CoolStandby := float32(20)
+	CoolStandby := float32(28)
 	if setup.SetpointCoolStandby != nil {
 		CoolStandby = float32(*setup.SetpointCoolStandby) / 10
 	}
-	HeatStandby := float32(20)
+	HeatStandby := float32(17)
 	if setup.SetpointHeatStandby != nil {
 		HeatStandby = float32(*setup.SetpointHeatStandby) / 10
 	}
