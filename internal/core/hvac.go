@@ -34,9 +34,9 @@ type HvacSysInfo struct {
 }
 
 type HvacLoop1 struct {
-	Regulation  HvacRegulation  `json:"regulation"`
-	Ventilation HvacVentilation `json:"ventilation"`
-	AirRegister HvacAirRegister `json:"airRegister"`
+	Regulation  HvacRegulation  `json:"reg1"`
+	Ventilation HvacVentilation `json:"vent1"`
+	AirRegister HvacAirRegister `json:"airReg1"`
 }
 
 type HvacRegulation struct {
