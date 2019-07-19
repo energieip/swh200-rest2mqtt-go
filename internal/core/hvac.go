@@ -40,19 +40,19 @@ type HvacLoop1 struct {
 }
 
 type HvacRegulation struct {
-	WindowHoldOff       int `json:"windowHoldOff"`
-	WindowHeartBeat     int `json:"windowHeartBeat"`
-	SpaceTemp           int `json:"spaceTemp"`
-	OffsetTemp          int `json:"offsetTemp"`
-	OccManCmd           int `json:"occManCmd"`
-	HeatCool            int `json:"heatCool"`
-	EffectifSetPoint    int `json:"effectifSetPoint"`
-	HeatOuput           int `json:"heatOuput"`
-	CoolOuput           int `json:"coolOuput"`
-	HeatOutputSecondary int `json:"heatOutputSecondary"`
-	DewSensor           int `json:"dewSensor"`
-	ChangeOver          int `json:"changeOver"`
-	DischAirTemp        int `json:"dischAirTemp"`
+	WindowHoldOff       int     `json:"windowHoldOff"`
+	WindowHeartBeat     int     `json:"windowHeartBeat"`
+	SpaceTemp           float32 `json:"spaceTemp"`
+	OffsetTemp          int     `json:"offsetTemp"`
+	OccManCmd           int     `json:"occManCmd"`
+	HeatCool            int     `json:"heatCool"`
+	EffectifSetPoint    float32 `json:"effectifSetPoint"`
+	HeatOuput           int     `json:"heatOuput"`
+	CoolOuput           int     `json:"coolOuput"`
+	HeatOutputSecondary int     `json:"heatOutputSecondary"`
+	DewSensor           int     `json:"dewSensor"`
+	ChangeOver          int     `json:"changeOver"`
+	DischAirTemp        float32 `json:"dischAirTemp"`
 }
 
 type HvacVentilation struct {
@@ -73,4 +73,18 @@ type HvacSetPoints struct {
 	SetpointUnoccHeat  float32 `json:"setpointUnoccHeat"`
 	SetpointStanbyCool float32 `json:"setpointStanbyCool"`
 	SetpointStanbyHeat float32 `json:"setpointStanbyHeat"`
+}
+
+type HvacSetupRegulation struct {
+	TemperatureSelect int     `json:"temperSelect"`
+	OccResetOffset    int     `json:"occResetOffset"`
+	TemperOffsetStep  float32 `json:"temperOffsetStep"`
+	RegulType         int     `json:"regulType"`
+	LoopsUsed         int     `json:"loopsUsed"`
+	PropBandHeat      int     `json:"propBandHeat"`
+	PropBandCool      int     `json:"propBandCool"`
+	PropBandElec      int     `json:"propBandElec"`
+	ResetTimeHeat     int     `json:"resetTimeHeat"`
+	ResetTimeCool     int     `json:"resetTimeCool"`
+	ResetTimeElec     int     `json:"resetTimeElec"`
 }

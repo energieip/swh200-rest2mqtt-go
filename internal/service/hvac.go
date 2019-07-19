@@ -68,10 +68,10 @@ func (s *Service) sendDump(status dhvac.Hvac) {
 	status.OADamper = info.AirRegister.OADamper
 	status.OccManCmd1 = info.Regulation.OccManCmd
 	status.DewSensor1 = info.Regulation.DewSensor
-	status.SpaceTemp1 = info.Regulation.SpaceTemp
+	status.SpaceTemp1 = int(info.Regulation.SpaceTemp * 10)
 	status.HeatCool1 = info.Regulation.HeatCool
 	status.CoolOutput1 = info.Regulation.CoolOuput
-	status.EffectSetPoint1 = info.Regulation.EffectifSetPoint
+	status.EffectSetPoint1 = int(info.Regulation.EffectifSetPoint * 10)
 	status.Shift = info.Regulation.OffsetTemp
 	status.HoldOff1 = info.Regulation.WindowHoldOff
 
@@ -83,12 +83,23 @@ func (s *Service) sendDump(status dhvac.Hvac) {
 		s.local.SendCommand("/read/hvac/"+status.Mac+"/"+pconst.UrlStatus, dump)
 		return
 	}
+
+	infoRegul, err := s.getHvacSetupRegulation(status.IP, token)
+	if err != nil {
+		status.Error = 2
+		s.hvacs.Set(status.Mac, status)
+		dump, _ := status.ToJSON()
+		s.local.SendCommand("/read/hvac/"+status.Mac+"/"+pconst.UrlStatus, dump)
+		return
+	}
+
 	status.SetpointUnoccupiedHeat1 = int(infoSetpoint.SetpointUnoccHeat * 10)
 	status.SetpointUnoccupiedCool1 = int(infoSetpoint.SetpointUnoccCool * 10)
 	status.SetpointOccupiedCool1 = int(infoSetpoint.SetpointOccCool * 10)
 	status.SetpointOccupiedHeat1 = int(infoSetpoint.SetpointOccHeat * 10)
 	status.SetpointStandbyCool1 = int(infoSetpoint.SetpointStanbyCool * 10)
 	status.SetpointStandbyHeat1 = int(infoSetpoint.SetpointStanbyHeat * 10)
+	status.TemperatureOffsetStep = int(infoRegul.TemperOffsetStep * 10)
 	status.Error = 0
 
 	s.hvacs.Set(status.Mac, status)
@@ -124,6 +135,12 @@ func (s *Service) receivedHvacSetup(setup dhvac.HvacSetup) {
 		rlog.Error("Cannot apply init config: ", err.Error())
 		return
 	}
+
+	err = s.setHvacSetupRegulation(setup, hvac.IP, token)
+	if err != nil {
+		rlog.Error("Cannot apply init config: ", err.Error())
+		return
+	}
 	if setup.Group != nil {
 		hvac.Group = *setup.Group
 	}
@@ -155,12 +172,11 @@ func (s *Service) receivedHvacUpdate(conf dhvac.HvacConf) {
 	}
 	s.hvacs.Set(hvac.Mac, hvac)
 
-	// token, err := s.hvacLogin(hvac.IP)
-	// if err != nil {
-	// 	return
-	// }
-	//TODO
-
+	token, err := s.hvacLogin(hvac.IP)
+	if err != nil {
+		return
+	}
+	s.setHvacRuntime(conf, hvac.IP, token)
 }
 
 func (s *Service) newHvac(new interface{}) error {
@@ -317,6 +333,116 @@ func (s *Service) getHvacSetpoints(IP string, token string) (*core.HvacSetPoints
 	body, err := ioutil.ReadAll(resp.Body)
 
 	status := core.HvacSetPoints{}
+	err = json.Unmarshal(body, &status)
+	if err != nil {
+		rlog.Error("Cannot parse body: " + err.Error())
+		return nil, err
+	}
+	return &status, nil
+}
+
+func (s *Service) setHvacRuntime(conf dhvac.HvacConf, IP string, token string) error {
+	url := "https://" + IP + "/api/runtime/hvac/loop1"
+
+	param := core.HvacLoop1{}
+	if conf.WindowStatus != nil {
+		value := 0
+		if *conf.WindowStatus == true {
+			value = 1
+		}
+		param.Regulation.WindowHoldOff = value
+	}
+	if conf.Temperature != nil {
+		param.Regulation.SpaceTemp = float32(*conf.Temperature) / 10.0
+	}
+
+	requestBody, err := json.Marshal(param)
+	if err != nil {
+		return err
+	}
+
+	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("authorization", "Bearer "+token)
+	transCfg := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+	}
+	client := &http.Client{Transport: transCfg}
+	resp, err := client.Do(req)
+
+	if err != nil {
+		rlog.Error(err.Error())
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return NewError("Incorrect Status code")
+	}
+
+	return nil
+}
+
+func (s *Service) setHvacSetupRegulation(setup dhvac.HvacSetup, IP string, token string) error {
+	url := "https://" + IP + "/api/setup/hvac/regulation"
+
+	if setup.TemperatureOffsetStep == nil {
+		return nil
+	}
+
+	config := core.HvacSetupRegulation{
+		TemperOffsetStep: float32(*setup.TemperatureOffsetStep) / 10.0,
+	}
+
+	requestBody, err := json.Marshal(config)
+	if err != nil {
+		return err
+	}
+
+	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("authorization", "Bearer "+token)
+	transCfg := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+	}
+	client := &http.Client{Transport: transCfg}
+	resp, err := client.Do(req)
+
+	if err != nil {
+		rlog.Error(err.Error())
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return NewError("Incorrect Status code")
+	}
+
+	return nil
+}
+
+func (s *Service) getHvacSetupRegulation(IP string, token string) (*core.HvacSetupRegulation, error) {
+	url := "https://" + IP + "/api/setup/hvac/regulation"
+
+	req, _ := http.NewRequest("GET", url, nil)
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("authorization", "Bearer "+token)
+	transCfg := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+	}
+	client := &http.Client{Transport: transCfg}
+	resp, err := client.Do(req)
+
+	if err != nil {
+		rlog.Error(err.Error())
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return nil, NewError("Incorrect Status code")
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+
+	status := core.HvacSetupRegulation{}
 	err = json.Unmarshal(body, &status)
 	if err != nil {
 		rlog.Error("Cannot parse body: " + err.Error())
