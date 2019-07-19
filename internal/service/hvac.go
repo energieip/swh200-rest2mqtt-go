@@ -358,9 +358,11 @@ func (s *Service) setHvacRuntime(conf dhvac.HvacConf, status dhvac.Hvac, IP stri
 		param.AirRegister.SpaceCO2 = *conf.CO2
 	}
 	if conf.Shift != nil {
-		step := status.TemperatureOffsetStep / 10 //0.5
-		offsetTemp := (*conf.Shift / 10) / step
-		param.Regulation.OffsetTemp = offsetTemp
+		step := float32(status.TemperatureOffsetStep) / 10.0
+		if step > 0 {
+			offsetTemp := (float32(*conf.Shift) / 10.0) / step
+			param.Regulation.OffsetTemp = int(offsetTemp)
+		}
 	}
 
 	requestBody, err := json.Marshal(param)
