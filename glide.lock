@@ -1,12 +1,12 @@
 hash: cada479166a8a0261ada4404bf677d8fb2a28e0cef0abc789b67adec22fc0814
-updated: 2019-07-19T10:24:32.372184175+02:00
+updated: 2019-07-19T16:46:22.292014788+02:00
 imports:
 - name: github.com/eclipse/paho.mqtt.golang
   version: 93c8a06e1e6dfeb17dd18a44e3e2f4e1db778237
   subpackages:
   - packets
 - name: github.com/energieip/common-components-go
-  version: 84870e26cd839a695035c1c1d84d8b41c7f8f623
+  version: ee5b7aa96308fd7f9c56c532c6dbe8d58a8aedc2
   subpackages:
   - pkg/dhvac
   - pkg/network

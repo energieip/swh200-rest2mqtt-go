@@ -3,7 +3,6 @@ package core
 //HvacHello network object
 type HvacHello struct {
 	Mac             string `json:"mac"`
-	FullMac         string `json:"fullMac"`
 	IP              string `json:"ip"`
 	Protocol        string `json:"protocol"`
 	SwitchMac       string `json:"switchMac"`

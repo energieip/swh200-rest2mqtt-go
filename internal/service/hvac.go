@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/energieip/common-components-go/pkg/dhvac"
@@ -27,18 +26,15 @@ func (s *Service) sendHello(driver dhvac.Hvac) {
 		DumpFrequency:   DefaultTimerDump,
 		SoftwareVersion: driver.SoftwareVersion,
 	}
-	if driver.FullMac != nil {
-		driverHello.FullMac = *driver.FullMac
-	}
 	dump, err := tools.ToJSON(driverHello)
 	if err != nil {
-		rlog.Errorf("Could not dump HVAC %v status %v", driver.FullMac, err.Error())
+		rlog.Errorf("Could not dump HVAC %v status %v", driver.Mac, err.Error())
 		return
 	}
 
 	err = s.local.SendCommand("/read/hvac/"+driver.Mac+"/"+pconst.UrlHello, dump)
 	if err != nil {
-		rlog.Errorf("Could not send hello to the server %v status %v", driver.FullMac, err.Error())
+		rlog.Errorf("Could not send hello to the server %v status %v", driver.Mac, err.Error())
 		return
 	}
 	rlog.Info("Hello " + driver.Mac + " sent to the server")
@@ -193,7 +189,7 @@ func (s *Service) newHvac(new interface{}) error {
 		return err
 	}
 	hvac := dhvac.Hvac{
-		FullMac:         &driver.Mac,
+		Mac:             driver.Mac,
 		SwitchMac:       s.Mac,
 		Protocol:        "REST",
 		IsConfigured:    false,
@@ -201,9 +197,6 @@ func (s *Service) newHvac(new interface{}) error {
 		IP:              driver.IP,
 		SoftwareVersion: info.SoftwareVersion,
 	}
-
-	submac := strings.SplitN(driver.Mac, ":", 4)
-	hvac.Mac = submac[len(submac)-1]
 
 	s.hvacs.Set(hvac.Mac, hvac)
 	s.driversSeen.Set(driver.Mac, time.Now().UTC())
