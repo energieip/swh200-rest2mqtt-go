@@ -45,7 +45,6 @@ func (s *Service) sendHello(driver dhvac.Hvac) {
 }
 
 func (s *Service) sendDump(status dhvac.Hvac) {
-	//update HVAC info
 	token, err := s.hvacLogin(status.IP)
 	if err != nil {
 		status.Error = 1
@@ -72,7 +71,6 @@ func (s *Service) sendDump(status dhvac.Hvac) {
 	status.HeatCool1 = info.Regulation.HeatCool
 	status.CoolOutput1 = info.Regulation.CoolOuput
 	status.EffectSetPoint1 = int(info.Regulation.EffectifSetPoint * 10)
-	status.Shift = info.Regulation.OffsetTemp
 	status.HoldOff1 = info.Regulation.WindowHoldOff
 
 	infoSetpoint, err := s.getHvacSetpoints(status.IP, token)
@@ -100,6 +98,7 @@ func (s *Service) sendDump(status dhvac.Hvac) {
 	status.SetpointStandbyCool1 = int(infoSetpoint.SetpointStanbyCool * 10)
 	status.SetpointStandbyHeat1 = int(infoSetpoint.SetpointStanbyHeat * 10)
 	status.TemperatureOffsetStep = int(infoRegul.TemperOffsetStep * 10)
+	status.Shift = int((float32(info.Regulation.OffsetTemp) * infoRegul.TemperOffsetStep) * 10)
 	status.Error = 0
 
 	s.hvacs.Set(status.Mac, status)
@@ -176,7 +175,7 @@ func (s *Service) receivedHvacUpdate(conf dhvac.HvacConf) {
 	if err != nil {
 		return
 	}
-	s.setHvacRuntime(conf, hvac.IP, token)
+	s.setHvacRuntime(conf, *hvac, hvac.IP, token)
 }
 
 func (s *Service) newHvac(new interface{}) error {
@@ -200,7 +199,7 @@ func (s *Service) newHvac(new interface{}) error {
 		IsConfigured:    false,
 		FriendlyName:    driver.Mac,
 		IP:              driver.IP,
-		SoftwareVersion: info.MainAppfirmwVersion,
+		SoftwareVersion: info.SoftwareVersion,
 	}
 
 	submac := strings.SplitN(driver.Mac, ":", 4)
@@ -341,7 +340,7 @@ func (s *Service) getHvacSetpoints(IP string, token string) (*core.HvacSetPoints
 	return &status, nil
 }
 
-func (s *Service) setHvacRuntime(conf dhvac.HvacConf, IP string, token string) error {
+func (s *Service) setHvacRuntime(conf dhvac.HvacConf, status dhvac.Hvac, IP string, token string) error {
 	url := "https://" + IP + "/api/runtime/hvac/loop1"
 
 	param := core.HvacLoop1{}
@@ -354,6 +353,14 @@ func (s *Service) setHvacRuntime(conf dhvac.HvacConf, IP string, token string) e
 	}
 	if conf.Temperature != nil {
 		param.Regulation.SpaceTemp = float32(*conf.Temperature) / 10.0
+	}
+	if conf.CO2 != nil {
+		param.AirRegister.SpaceCO2 = *conf.CO2
+	}
+	if conf.Shift != nil {
+		step := status.TemperatureOffsetStep / 10 //0.5
+		offsetTemp := (*conf.Shift / 10) / step
+		param.Regulation.OffsetTemp = offsetTemp
 	}
 
 	requestBody, err := json.Marshal(param)

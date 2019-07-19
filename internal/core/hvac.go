@@ -26,11 +26,12 @@ type HvacAuth struct {
 }
 
 type HvacSysInfo struct {
-	Mac                 string `json:"macAddress"`
-	FactoryVersion      string `json:"factoryVersion"`
-	MainAppfirmwVersion string `json:"mainAppfirmwVersion"`
-	RestAPIVersion      string `json:"restApiVersion"`
-	DatabaseVersion     string `json:"databaseVersion"`
+	Mac               string `json:"macAddress"`
+	ProductType       string `json:"productType"`
+	FactoryVersion    string `json:"factoryVersion"`
+	SoftwareVersion   string `json:"softwareVersion"`
+	DatabaseVersion   string `json:"databaseVersion"`
+	ParametersVersion string `json:"parametersVersion"`
 }
 
 type HvacLoop1 struct {
