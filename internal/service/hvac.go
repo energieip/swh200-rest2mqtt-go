@@ -176,14 +176,22 @@ func (s *Service) receivedHvacUpdate(conf dhvac.HvacConf) {
 
 func (s *Service) newHvac(new interface{}) error {
 	driver, err := core.ToDevice(new)
-	if err != nil {
+	if err != nil || driver == nil {
 		return err
+	}
+	rlog.Info("New HVAC plugged ", driver.Mac)
+	var token string
+	token, err = s.hvacLogin(driver.IP)
+	if err != nil {
+		// wait for device to be up and ready
+		time.Sleep(120 * time.Second)
+		rlog.Info("Retry connection to HVAC ", driver.Mac)
+		token, err = s.hvacLogin(driver.IP)
+		if err != nil {
+			return err
+		}
 	}
 
-	token, err := s.hvacLogin(driver.IP)
-	if err != nil {
-		return err
-	}
 	info, err := s.hvacGetVersion(driver.IP, token)
 	if err != nil || info == nil {
 		return err

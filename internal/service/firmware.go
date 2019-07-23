@@ -130,7 +130,7 @@ func (s *Service) Run() error {
 			for evtType, content := range evtAPI {
 				switch evtType {
 				case "newDevice":
-					s.newHvac(content)
+					go s.newHvac(content)
 				}
 			}
 		}
