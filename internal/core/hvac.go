@@ -66,6 +66,39 @@ type HvacAirRegister struct {
 	OADamper int `json:"OADamper"`
 }
 
+type HvacLoopCtrl struct {
+	Regulation  *HvacRegulationCtrl  `json:"regulation,omitempty"`
+	Ventilation *HvacVentilationCtrl `json:"ventilation,omitempty"`
+	AirRegister *HvacAirRegisterCtrl `json:"airRegister,omitempty"`
+}
+
+type HvacRegulationCtrl struct {
+	WindowHoldOff       *int     `json:"windowHoldOff,omitempty"`
+	WindowHeartBeat     *int     `json:"windowHeartBeat,omitempty"`
+	SpaceTemp           *float32 `json:"spaceTemp,omitempty"`
+	OffsetTemp          *int     `json:"offsetTemp,omitempty"`
+	OccManCmd           *int     `json:"occManCmd,omitempty"`
+	HeatCool            *int     `json:"heatCool,omitempty"`
+	EffectifSetPoint    *float32 `json:"effectifSetPoint,omitempty"`
+	HeatOuput           *int     `json:"heatOuput,omitempty"`
+	CoolOuput           *int     `json:"coolOuput,omitempty"`
+	HeatOutputSecondary *int     `json:"heatOutputSecondary,omitempty"`
+	DewSensor           *int     `json:"dewSensor,omitempty"`
+	ChangeOver          *int     `json:"changeOver,omitempty"`
+	DischAirTemp        *float32 `json:"dischAirTemp,omitempty"`
+}
+
+type HvacVentilationCtrl struct {
+	FanSpeed         *int `json:"fanSpeed,omitempty"`
+	FanSpeedCmdValue *int `json:"fanSpeedCmdValue,omitempty"`
+	FanSpeedCmdMode  *int `json:"fanSpeedCmdMode,omitempty"`
+}
+
+type HvacAirRegisterCtrl struct {
+	SpaceCO2 *int `json:"spaceCO2,omitempty"`
+	OADamper *int `json:"OADamper,omitempty"`
+}
+
 type HvacSetPoints struct {
 	SetpointOccCool    float32 `json:"setpointOccCool"`
 	SetpointOccHeat    float32 `json:"setpointOccHeat"`

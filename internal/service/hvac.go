@@ -217,6 +217,7 @@ func (s *Service) hvacGetStatus(IP string, token string) (*core.HvacLoop1, error
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Set("authorization", "Bearer "+token)
 	req.Header.Add("Content-Type", "application/json")
+	req.Close = true
 	transCfg := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
 	}
@@ -245,6 +246,7 @@ func (s *Service) hvacGetVersion(IP string, token string) (*core.HvacSysInfo, er
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("authorization", "Bearer "+token)
+	req.Close = true
 	transCfg := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
 	}
@@ -283,6 +285,7 @@ func (s *Service) hvacLogin(IP string) (string, error) {
 
 	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
 	req.Header.Add("Content-Type", "application/json")
+	req.Close = true
 	transCfg := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
@@ -315,6 +318,7 @@ func (s *Service) getHvacSetpoints(IP string, token string) (*core.HvacSetPoints
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("authorization", "Bearer "+token)
+	req.Close = true
 	transCfg := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
 	}
@@ -344,25 +348,45 @@ func (s *Service) getHvacSetpoints(IP string, token string) (*core.HvacSetPoints
 func (s *Service) setHvacRuntime(conf dhvac.HvacConf, status dhvac.Hvac, IP string, token string) error {
 	url := "https://" + IP + "/api/runtime/hvac/loop1"
 
-	param := core.HvacLoop1{}
+	param := core.HvacLoopCtrl{}
+
 	if conf.WindowStatus != nil {
+		if param.Regulation == nil {
+			airReg := core.HvacRegulationCtrl{}
+			param.Regulation = &airReg
+		}
 		value := 0
 		if *conf.WindowStatus == true {
 			value = 1
 		}
-		param.Regulation.WindowHoldOff = value
+		param.Regulation.WindowHoldOff = &value
 	}
 	if conf.Temperature != nil {
-		param.Regulation.SpaceTemp = float32(*conf.Temperature) / 10.0
+		if param.Regulation == nil {
+			airReg := core.HvacRegulationCtrl{}
+			param.Regulation = &airReg
+		}
+		spaceTemp := float32(*conf.Temperature) / 10.0
+		param.Regulation.SpaceTemp = &spaceTemp
 	}
 	if conf.CO2 != nil {
-		param.AirRegister.SpaceCO2 = *conf.CO2
+		if param.AirRegister == nil {
+			airRegister := core.HvacAirRegisterCtrl{}
+			param.AirRegister = &airRegister
+		}
+		co2 := *conf.CO2 / 10
+		param.AirRegister.SpaceCO2 = &co2
 	}
 	if conf.Shift != nil {
+		if param.Regulation == nil {
+			airReg := core.HvacRegulationCtrl{}
+			param.Regulation = &airReg
+		}
 		step := float32(status.TemperatureOffsetStep) / 10.0
 		if step > 0 {
 			offsetTemp := (float32(*conf.Shift) / 10.0) / step
-			param.Regulation.OffsetTemp = int(offsetTemp)
+			offset := int(offsetTemp)
+			param.Regulation.OffsetTemp = &offset
 		}
 	}
 
@@ -370,10 +394,12 @@ func (s *Service) setHvacRuntime(conf dhvac.HvacConf, status dhvac.Hvac, IP stri
 	if err != nil {
 		return err
 	}
+	rlog.Infof("Send new parameters to HVAC %v: %v", status.Mac, string(requestBody))
 
 	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("authorization", "Bearer "+token)
+	req.Close = true
 	transCfg := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
 	}
@@ -411,6 +437,7 @@ func (s *Service) setHvacSetupRegulation(setup dhvac.HvacSetup, IP string, token
 	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("authorization", "Bearer "+token)
+	req.Close = true
 	transCfg := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
 	}
@@ -435,6 +462,7 @@ func (s *Service) getHvacSetupRegulation(IP string, token string) (*core.HvacSet
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("authorization", "Bearer "+token)
+	req.Close = true
 	transCfg := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
 	}
@@ -503,6 +531,7 @@ func (s *Service) hvacInit(setup dhvac.HvacSetup, IP string, token string) error
 		return err
 	}
 	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
+	req.Close = true
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("authorization", "Bearer "+token)
 	transCfg := &http.Transport{
