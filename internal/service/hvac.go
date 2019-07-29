@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/energieip/common-components-go/pkg/dhvac"
@@ -37,14 +38,13 @@ func (s *Service) sendHello(driver dhvac.Hvac) {
 		rlog.Errorf("Could not send hello to the server %v status %v", driver.Mac, err.Error())
 		return
 	}
-	rlog.Info("Hello " + driver.Mac + " sent to the server")
 }
 
 func (s *Service) sendDump(status dhvac.Hvac) {
 	token, err := s.hvacLogin(status.IP)
 	if err != nil {
 		status.Error = 1
-		s.hvacs.Set(status.Mac, status)
+		s.hvacs.Set(strings.ToUpper(status.Mac), status)
 		dump, _ := status.ToJSON()
 		s.local.SendCommand("/read/hvac/"+status.Mac+"/"+pconst.UrlStatus, dump)
 		return
@@ -53,7 +53,7 @@ func (s *Service) sendDump(status dhvac.Hvac) {
 	info, err := s.hvacGetStatus(status.IP, token)
 	if err != nil {
 		status.Error = 2
-		s.hvacs.Set(status.Mac, status)
+		s.hvacs.Set(strings.ToUpper(status.Mac), status)
 		dump, _ := status.ToJSON()
 		s.local.SendCommand("/read/hvac/"+status.Mac+"/"+pconst.UrlStatus, dump)
 		return
@@ -72,7 +72,7 @@ func (s *Service) sendDump(status dhvac.Hvac) {
 	infoSetpoint, err := s.getHvacSetpoints(status.IP, token)
 	if err != nil {
 		status.Error = 2
-		s.hvacs.Set(status.Mac, status)
+		s.hvacs.Set(strings.ToUpper(status.Mac), status)
 		dump, _ := status.ToJSON()
 		s.local.SendCommand("/read/hvac/"+status.Mac+"/"+pconst.UrlStatus, dump)
 		return
@@ -81,7 +81,7 @@ func (s *Service) sendDump(status dhvac.Hvac) {
 	infoRegul, err := s.getHvacSetupRegulation(status.IP, token)
 	if err != nil {
 		status.Error = 2
-		s.hvacs.Set(status.Mac, status)
+		s.hvacs.Set(strings.ToUpper(status.Mac), status)
 		dump, _ := status.ToJSON()
 		s.local.SendCommand("/read/hvac/"+status.Mac+"/"+pconst.UrlStatus, dump)
 		return
@@ -97,15 +97,15 @@ func (s *Service) sendDump(status dhvac.Hvac) {
 	status.Shift = int((float32(info.Regulation.OffsetTemp) * infoRegul.TemperOffsetStep) * 10)
 	status.Error = 0
 
-	s.hvacs.Set(status.Mac, status)
-	s.driversSeen.Set(status.Mac, time.Now().UTC())
+	s.hvacs.Set(strings.ToUpper(status.Mac), status)
+	s.driversSeen.Set(strings.ToUpper(status.Mac), time.Now().UTC())
 
 	dump, _ := status.ToJSON()
 	s.local.SendCommand("/read/hvac/"+status.Mac+"/"+pconst.UrlStatus, dump)
 }
 
 func (s *Service) receivedHvacSetup(setup dhvac.HvacSetup) {
-	d, errGet := s.hvacs.Get(setup.Mac)
+	d, errGet := s.hvacs.Get(strings.ToUpper(setup.Mac))
 	if !errGet {
 		rlog.Error("Cannot find hvac  ", setup.Mac)
 		return
@@ -142,11 +142,11 @@ func (s *Service) receivedHvacSetup(setup dhvac.HvacSetup) {
 	hvac.Label = setup.Label
 	hvac.DumpFrequency = setup.DumpFrequency
 	hvac.IsConfigured = true
-	s.hvacs.Set(hvac.Mac, hvac)
+	s.hvacs.Set(strings.ToUpper(hvac.Mac), hvac)
 }
 
 func (s *Service) receivedHvacUpdate(conf dhvac.HvacConf) {
-	d, errGet := s.hvacs.Get(conf.Mac)
+	d, errGet := s.hvacs.Get(strings.ToUpper(conf.Mac))
 	if !errGet {
 		return
 	}
@@ -165,7 +165,7 @@ func (s *Service) receivedHvacUpdate(conf dhvac.HvacConf) {
 	if conf.Label != nil {
 		hvac.Label = conf.Label
 	}
-	s.hvacs.Set(hvac.Mac, hvac)
+	s.hvacs.Set(strings.ToUpper(hvac.Mac), hvac)
 
 	token, err := s.hvacLogin(hvac.IP)
 	if err != nil {
@@ -206,8 +206,8 @@ func (s *Service) newHvac(new interface{}) error {
 		SoftwareVersion: info.SoftwareVersion,
 	}
 
-	s.hvacs.Set(hvac.Mac, hvac)
-	s.driversSeen.Set(driver.Mac, time.Now().UTC())
+	s.hvacs.Set(strings.ToUpper(hvac.Mac), hvac)
+	s.driversSeen.Set(strings.ToUpper(driver.Mac), time.Now().UTC())
 	return nil
 }
 
@@ -388,6 +388,29 @@ func (s *Service) setHvacRuntime(conf dhvac.HvacConf, status dhvac.Hvac, IP stri
 			offset := int(offsetTemp)
 			param.Regulation.OffsetTemp = &offset
 		}
+	}
+
+	if conf.Presence != nil {
+		if param.Regulation == nil {
+			airReg := core.HvacRegulationCtrl{}
+			param.Regulation = &airReg
+		}
+		pres := *conf.Presence
+		if pres {
+			mode := dhvac.OCCUPANCY_COMFORT
+			param.Regulation.OccManCmd = &mode
+		} else {
+			mode := dhvac.OCCUPANCY_ECONOMY
+			param.Regulation.OccManCmd = &mode
+		}
+	}
+
+	if conf.HeatCool != nil {
+		if param.Regulation == nil {
+			airReg := core.HvacRegulationCtrl{}
+			param.Regulation = &airReg
+		}
+		param.Regulation.HeatCool = conf.HeatCool
 	}
 
 	requestBody, err := json.Marshal(param)
