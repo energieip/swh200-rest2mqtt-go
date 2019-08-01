@@ -61,7 +61,7 @@ func (s *Service) sendDump(status dhvac.Hvac) {
 	status.LinePower = 10
 	status.SpaceCO2 = info.AirRegister.SpaceCO2
 	status.OADamper = info.AirRegister.OADamper
-	status.SpaceHygro = info.AirRegister.SpaceHygro
+	status.SpaceHygro = int(info.AirRegister.SpaceHygro * 10)
 	status.OccManCmd1 = info.Regulation.OccManCmd
 	status.DewSensor1 = info.Regulation.DewSensor
 	status.SpaceTemp1 = int(info.Regulation.SpaceTemp * 10)
@@ -457,8 +457,16 @@ func (s *Service) setHvacSetupRegulation(setup dhvac.HvacSetup, IP string, token
 		return nil
 	}
 
-	config := core.HvacSetupRegulation{
-		TemperOffsetStep: float32(*setup.TemperatureOffsetStep) / 10.0,
+	offset := float32(*setup.TemperatureOffsetStep) / 10.0
+	temperSelect := 1 // via the network
+	regulType := 9    // 6 way-valves
+	loopsUsed := 1    // loop1 only
+
+	config := core.HvacSetupRegulationCtrl{
+		TemperOffsetStep:  &offset,
+		TemperatureSelect: &temperSelect,
+		RegulType:         &regulType,
+		LoopsUsed:         &loopsUsed,
 	}
 
 	requestBody, err := json.Marshal(config)

@@ -123,3 +123,17 @@ type HvacSetupRegulation struct {
 	ResetTimeCool     int     `json:"resetTimeCool"`
 	ResetTimeElec     int     `json:"resetTimeElec"`
 }
+
+type HvacSetupRegulationCtrl struct {
+	TemperatureSelect *int     `json:"temperSelect,omitempty"`
+	OccResetOffset    *int     `json:"occResetOffset,omitempty"`
+	TemperOffsetStep  *float32 `json:"temperOffsetStep,omitempty"`
+	RegulType         *int     `json:"regulType,omitempty"`
+	LoopsUsed         *int     `json:"loopsUsed,omitempty"`
+	PropBandHeat      *int     `json:"propBandHeat,omitempty"`
+	PropBandCool      *int     `json:"propBandCool,omitempty"`
+	PropBandElec      *int     `json:"propBandElec,omitempty"`
+	ResetTimeHeat     *int     `json:"resetTimeHeat,omitempty"`
+	ResetTimeCool     *int     `json:"resetTimeCool,omitempty"`
+	ResetTimeElec     *int     `json:"resetTimeElec,omitempty"`
+}
