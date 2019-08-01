@@ -19,7 +19,7 @@ type HvacLogin struct {
 
 type HvacAuth struct {
 	TokenType   string `json:"tokenType"`
-	AccessToken string `json:"token"`
+	AccessToken string `json:"accessToken"`
 	ExpireIn    int    `json:"expireIn"`
 	Admin       bool   `json:"admin"`
 }
@@ -34,9 +34,9 @@ type HvacSysInfo struct {
 }
 
 type HvacLoop1 struct {
-	Regulation  HvacRegulation  `json:"reg1"`
-	Ventilation HvacVentilation `json:"vent1"`
-	AirRegister HvacAirRegister `json:"airReg1"`
+	Regulation  HvacRegulation  `json:"regulation"`
+	Ventilation HvacVentilation `json:"ventilation"`
+	AirRegister HvacAirRegister `json:"airRegister"`
 }
 
 type HvacRegulation struct {
@@ -62,8 +62,9 @@ type HvacVentilation struct {
 }
 
 type HvacAirRegister struct {
-	SpaceCO2 int `json:"spaceCO2"`
-	OADamper int `json:"OADamper"`
+	SpaceCO2   int `json:"spaceCO2"`
+	OADamper   int `json:"OADamper"`
+	SpaceHygro int `json:"spaceHygro"`
 }
 
 type HvacLoopCtrl struct {
@@ -95,8 +96,9 @@ type HvacVentilationCtrl struct {
 }
 
 type HvacAirRegisterCtrl struct {
-	SpaceCO2 *int `json:"spaceCO2,omitempty"`
-	OADamper *int `json:"OADamper,omitempty"`
+	SpaceCO2   *int `json:"spaceCO2,omitempty"`
+	OADamper   *int `json:"OADamper,omitempty"`
+	SpaceHygro *int `json:"spaceHygro,omitempty"`
 }
 
 type HvacSetPoints struct {
