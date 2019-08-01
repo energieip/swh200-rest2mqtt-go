@@ -1,12 +1,17 @@
 package service
 
 import (
+	"bytes"
+	"io"
 	"os"
+	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/energieip/common-components-go/pkg/dhvac"
 
 	"github.com/energieip/swh200-rest2mqtt-go/internal/api"
+	"github.com/energieip/swh200-rest2mqtt-go/internal/core"
 	net "github.com/energieip/swh200-rest2mqtt-go/internal/network"
 
 	pkg "github.com/energieip/common-components-go/pkg/service"
@@ -82,8 +87,49 @@ func (s *Service) Initialize(confFile string) error {
 	go s.local.Connect(*conf)
 	web := api.InitAPI(*conf)
 	s.api = web
+	go s.coldBootStart()
 	rlog.Info("rest2mqtt service started")
 	return nil
+}
+
+func (s *Service) coldBootStart() {
+	nmap := exec.Command("nmap", "-sP", "192.168.0.0/24")
+	filter := exec.Command("awk", "/Nmap scan report for/{printf $5;}/MAC Address:/{print \" => \"$3;}")
+
+	r, w := io.Pipe()
+	nmap.Stdout = w
+	filter.Stdin = r
+
+	var result bytes.Buffer
+	filter.Stdout = &result
+
+	rlog.Info("Start coldBoot device Scan")
+
+	nmap.Start()
+	filter.Start()
+	nmap.Wait()
+	w.Close()
+	filter.Wait()
+
+	for _, line := range strings.Split(result.String(), "\n") {
+		elts := strings.Split(line, " => ")
+		if len(elts) != 2 {
+			continue
+		}
+		mac := elts[1]
+		ip := elts[0]
+		if strings.HasPrefix(mac, "F2:23") {
+			rlog.Info("Skip EIP device: ", mac)
+			continue
+		}
+		device := core.Device{
+			Mac: mac,
+			IP:  ip,
+		}
+		rlog.Info("coldBoot found device : ", device)
+		s.newHvac(device)
+	}
+	rlog.Info("End coldBoot device Scan")
 }
 
 //Stop service
