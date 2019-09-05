@@ -48,6 +48,8 @@ deb:
 	sed -i "s/COMPONENT/$(COMPONENT)/g" $(BUILD_PATH)/DEBIAN/control
 	cp ./scripts/Makefile $(BUILD_PATH)/../
 	cp bin/new-device-$(ARCH) $(BUILD_PATH)/usr/local/bin/new-device
+	cp bin/new_device.sh $(BUILD_PATH)/usr/local/bin/new_device.sh
+	chmod +x $(BUILD_PATH)/usr/local/bin/new_device.sh
 	cp bin/$(COMPONENT)-$(ARCH) $(BUILD_PATH)/usr/local/bin/$(COMPONENT)
 	make -C build DEB_PACKAGE=$(BUILD_NAME) deb
 
