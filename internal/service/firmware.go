@@ -93,7 +93,7 @@ func (s *Service) Initialize(confFile string) error {
 }
 
 func (s *Service) coldBootStart() {
-	nmap := exec.Command("nmap", "-sP", "192.168.0.0/24")
+	nmap := exec.Command("nmap", "-sP", "10.0.0.0/24")
 	filter := exec.Command("awk", "/Nmap scan report for/{printf $5;}/MAC Address:/{print \" => \"$3;}")
 
 	r, w := io.Pipe()
