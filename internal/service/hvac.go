@@ -61,7 +61,7 @@ func (s *Service) sendDump(status dhvac.Hvac) {
 	status.LinePower = 10
 	status.SpaceCO2 = info.AirRegister.SpaceCO2
 	status.OADamper = info.AirRegister.OADamper
-	status.SpaceHygro = int(info.AirRegister.SpaceHygro * 10)
+	status.SpaceHygro = int(info.AirRegister.SpaceHygroRel * 10)
 	status.OccManCmd1 = info.Regulation.OccManCmd
 	status.DewSensor1 = info.Regulation.DewSensor
 	status.SpaceTemp1 = int(info.Regulation.SpaceTemp * 10)
@@ -384,7 +384,7 @@ func (s *Service) setHvacRuntime(conf dhvac.HvacConf, status dhvac.Hvac, IP stri
 			param.AirRegister = &airRegister
 		}
 		hygro := *conf.Hygrometry / 10
-		param.AirRegister.SpaceHygro = &hygro
+		param.AirRegister.SpaceHygroRel = &hygro
 	}
 	if conf.Shift != nil {
 		if param.Regulation == nil {

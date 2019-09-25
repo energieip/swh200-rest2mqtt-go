@@ -62,9 +62,9 @@ type HvacVentilation struct {
 }
 
 type HvacAirRegister struct {
-	SpaceCO2   int `json:"spaceCO2"`
-	OADamper   int `json:"OADamper"`
-	SpaceHygro int `json:"spaceHygro"`
+	SpaceCO2      int `json:"spaceCO2"`
+	OADamper      int `json:"OADamper"`
+	SpaceHygroRel int `json:"spaceHygroRel"`
 }
 
 type HvacLoopCtrl struct {
@@ -96,9 +96,9 @@ type HvacVentilationCtrl struct {
 }
 
 type HvacAirRegisterCtrl struct {
-	SpaceCO2   *int `json:"spaceCO2,omitempty"`
-	OADamper   *int `json:"OADamper,omitempty"`
-	SpaceHygro *int `json:"spaceHygro,omitempty"`
+	SpaceCO2      *int `json:"spaceCO2,omitempty"`
+	OADamper      *int `json:"OADamper,omitempty"`
+	SpaceHygroRel *int `json:"spaceHygroRel,omitempty"`
 }
 
 type HvacSetPoints struct {
