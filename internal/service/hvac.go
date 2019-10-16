@@ -399,7 +399,7 @@ func (s *Service) setHvacRuntime(conf dhvac.HvacConf, status dhvac.Hvac, IP stri
 		}
 	}
 
-	if conf.Mode != nil {
+	if conf.TargetMode != nil {
 		if param.Regulation == nil {
 			airReg := core.HvacRegulationCtrl{}
 			param.Regulation = &airReg
