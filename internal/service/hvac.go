@@ -354,7 +354,7 @@ func (s *Service) hvacLogin(IP string) (string, error) {
 	return auth.AccessToken, nil
 }
 
-func (s *Service) getHvacSetpoints(IP string, token string) (*core.HvacSetPoints, error) {
+func (s *Service) getHvacSetpoints(IP string, token string) (*core.HvacSetPointsValues, error) {
 	url := "https://" + IP + "/api/setup/hvac/setpoint/loop1"
 
 	req, _ := http.NewRequest("GET", url, nil)
@@ -378,7 +378,7 @@ func (s *Service) getHvacSetpoints(IP string, token string) (*core.HvacSetPoints
 
 	body, err := ioutil.ReadAll(resp.Body)
 
-	status := core.HvacSetPoints{}
+	status := core.HvacSetPointsValues{}
 	err = json.Unmarshal(body, &status)
 	if err != nil {
 		rlog.Error("Cannot parse body: " + err.Error())
@@ -788,12 +788,12 @@ func (s *Service) hvacInit(setup dhvac.HvacSetup, IP string, token string) error
 	}
 
 	config := core.HvacSetPoints{
-		SetpointOccCool:    OccCool,
-		SetpointOccHeat:    OccHeat,
-		SetpointUnoccHeat:  UnoccHeat,
-		SetpointUnoccCool:  UnoccCool,
-		SetpointStanbyCool: CoolStandby,
-		SetpointStanbyHeat: HeatStandby,
+		SetpointOccCool:    &OccCool,
+		SetpointOccHeat:    &OccHeat,
+		SetpointUnoccHeat:  &UnoccHeat,
+		SetpointUnoccCool:  &UnoccCool,
+		SetpointStanbyCool: &CoolStandby,
+		SetpointStanbyHeat: &HeatStandby,
 	}
 
 	requestBody, err := json.Marshal(config)
@@ -822,22 +822,28 @@ func (s *Service) hvacSetAFConfig(setup dhvac.HvacConf, IP string, token string)
 
 	config := core.HvacSetPoints{}
 	if setup.SetpointCoolOccupied != nil {
-		config.SetpointOccCool = float32(*setup.SetpointCoolOccupied) / 10
+		value := float32(*setup.SetpointCoolOccupied) / 10
+		config.SetpointOccCool = &value
 	}
 	if setup.SetpointHeatOccupied != nil {
-		config.SetpointOccHeat = float32(*setup.SetpointHeatOccupied) / 10
+		value := float32(*setup.SetpointHeatOccupied) / 10
+		config.SetpointOccHeat = &value
 	}
 	if setup.SetpointHeatInoccupied != nil {
-		config.SetpointUnoccHeat = float32(*setup.SetpointHeatInoccupied) / 10
+		value := float32(*setup.SetpointHeatInoccupied) / 10
+		config.SetpointUnoccHeat = &value
 	}
 	if setup.SetpointCoolInoccupied != nil {
-		config.SetpointUnoccCool = float32(*setup.SetpointCoolInoccupied) / 10
+		value := float32(*setup.SetpointCoolInoccupied) / 10
+		config.SetpointUnoccCool = &value
 	}
 	if setup.SetpointCoolStandby != nil {
-		config.SetpointStanbyCool = float32(*setup.SetpointCoolStandby) / 10
+		value := float32(*setup.SetpointCoolStandby) / 10
+		config.SetpointStanbyCool = &value
 	}
 	if setup.SetpointHeatStandby != nil {
-		config.SetpointStanbyHeat = float32(*setup.SetpointHeatStandby) / 10
+		value := float32(*setup.SetpointHeatStandby) / 10
+		config.SetpointStanbyHeat = &value
 	}
 	requestBody, err := json.Marshal(config)
 	if err != nil {

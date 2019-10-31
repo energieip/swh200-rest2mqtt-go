@@ -101,13 +101,21 @@ type HvacAirRegisterCtrl struct {
 	SpaceHygroRel *int `json:"spaceHygroRel,omitempty"`
 }
 
-type HvacSetPoints struct {
+type HvacSetPointsValues struct {
 	SetpointOccCool    float32 `json:"setpointOccCool"`
 	SetpointOccHeat    float32 `json:"setpointOccHeat"`
 	SetpointUnoccCool  float32 `json:"setpointUnoccCool"`
 	SetpointUnoccHeat  float32 `json:"setpointUnoccHeat"`
 	SetpointStanbyCool float32 `json:"setpointStanbyCool"`
 	SetpointStanbyHeat float32 `json:"setpointStanbyHeat"`
+}
+type HvacSetPoints struct {
+	SetpointOccCool    *float32 `json:"setpointOccCool,omitempty"`
+	SetpointOccHeat    *float32 `json:"setpointOccHeat,omitempty"`
+	SetpointUnoccCool  *float32 `json:"setpointUnoccCool,omitempty"`
+	SetpointUnoccHeat  *float32 `json:"setpointUnoccHeat,omitempty"`
+	SetpointStanbyCool *float32 `json:"setpointStanbyCool,omitempty"`
+	SetpointStanbyHeat *float32 `json:"setpointStanbyHeat,omitempty"`
 }
 
 type HvacSetupRegulation struct {
