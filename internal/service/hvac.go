@@ -66,7 +66,8 @@ func (s *Service) sendDump(status dhvac.Hvac) {
 	status.DewSensor1 = info.Regulation.DewSensor
 	status.SpaceTemp1 = int(info.Regulation.SpaceTemp * 10)
 	status.HeatCool1 = info.Regulation.HeatCool
-	status.CoolOutput1 = info.Regulation.CoolOuput
+	status.CoolOutput1 = info.Regulation.CoolOutput
+	status.HeatOutput1 = info.Regulation.HeatOutput
 	status.EffectSetPoint1 = int(info.Regulation.EffectifSetPoint * 10)
 	status.HoldOff1 = info.Regulation.WindowHoldOff
 

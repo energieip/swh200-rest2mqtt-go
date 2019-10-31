@@ -47,8 +47,8 @@ type HvacRegulation struct {
 	OccManCmd           int     `json:"occManCmd"`
 	HeatCool            int     `json:"heatCool"`
 	EffectifSetPoint    float32 `json:"effectifSetPoint"`
-	HeatOuput           int     `json:"heatOuput"`
-	CoolOuput           int     `json:"coolOuput"`
+	HeatOutput          int     `json:"heatOutput"`
+	CoolOutput          int     `json:"coolOutput"`
 	HeatOutputSecondary int     `json:"heatOutputSecondary"`
 	DewSensor           int     `json:"dewSensor"`
 	ChangeOver          int     `json:"changeOver"`
