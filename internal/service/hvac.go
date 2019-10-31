@@ -177,6 +177,11 @@ func (s *Service) receivedHvacSetup(setup dhvac.HvacSetup) {
 		rlog.Error("Cannot apply init config: ", err.Error())
 		return
 	}
+	err = s.setHvacSetupAirRegister(setup, hvac.IP, token)
+	if err != nil {
+		rlog.Error("Cannot airRegister config: ", err.Error())
+		return
+	}
 	if setup.Group != nil {
 		hvac.Group = *setup.Group
 	}
@@ -506,6 +511,50 @@ func (s *Service) setHvacRuntime(conf dhvac.HvacConf, status dhvac.Hvac, IP stri
 	return nil
 }
 
+func (s *Service) setHvacSetupAirRegister(setup dhvac.HvacSetup, IP string, token string) error {
+	url := "https://" + IP + "/api/setup/hvac/airRegister"
+
+	hygroMode := 1
+	config := core.HvacSetupAirQualityCtrl{
+		HygroMode: &hygroMode,
+	}
+	if setup.OaDamperMode != nil {
+		config.OADamperMode = setup.OaDamperMode
+	}
+	if setup.CO2Mode != nil {
+		config.CO2Mode = setup.CO2Mode
+	}
+	if setup.CO2Max != nil {
+		config.CO2Max = setup.CO2Max
+	}
+
+	requestBody, err := json.Marshal(config)
+	if err != nil {
+		return err
+	}
+
+	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("authorization", "Bearer "+token)
+	req.Close = true
+	transCfg := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+	}
+	client := &http.Client{Transport: transCfg}
+	resp, err := client.Do(req)
+
+	if err != nil {
+		rlog.Error(err.Error())
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return NewError("Incorrect Status code")
+	}
+
+	return nil
+}
+
 func (s *Service) setHvacSetupRegulation(setup dhvac.HvacSetup, IP string, token string) error {
 	url := "https://" + IP + "/api/setup/hvac/regulation"
 
@@ -514,15 +563,12 @@ func (s *Service) setHvacSetupRegulation(setup dhvac.HvacSetup, IP string, token
 	}
 
 	offset := float32(*setup.TemperatureOffsetStep) / 10.0
-	temperSelect := 1 // via the network
-	regulType := 9    // 6 way-valves
-	loopsUsed := 1    // loop1 only
 
 	config := core.HvacSetupRegulationCtrl{
 		TemperOffsetStep:  &offset,
-		TemperatureSelect: &temperSelect,
-		RegulType:         &regulType,
-		LoopsUsed:         &loopsUsed,
+		TemperatureSelect: setup.TemperatureSelection,
+		RegulType:         setup.RegulationType,
+		LoopsUsed:         setup.LoopUsed,
 	}
 
 	requestBody, err := json.Marshal(config)

@@ -146,6 +146,19 @@ type HvacSetupRegulationCtrl struct {
 	ResetTimeElec     *int     `json:"resetTimeElec,omitempty"`
 }
 
+type HvacSetupAirQualityCtrl struct {
+	OADamperMode  *int     `json:"oaDamperMode,omitempty"`
+	OADamperMin   *int     `json:"oaDamperMin,omitempty"`
+	OADamperMax   *int     `json:"oaDamperMax,omitempty"`
+	CO2Mode       *int     `json:"co2Mode,omitempty"`
+	CO2Setpoint   *int     `json:"co2Setpoint,omitempty"`
+	CO2Bp         *int     `json:"co2Bp,omitempty"`
+	CO2Max        *int     `json:"co2Max,omitempty"`
+	HygroMode     *int     `json:"hygroMode,omitempty"`
+	HygroSetpoint *float32 `json:"hygroSetpoint,omitempty"`
+	HygroBp       *float32 `json:"hygroBp,omitempty"`
+}
+
 type HvacInput struct {
 	InputE1 *int `json:"inputE1,omitempty"`
 	InputE2 *int `json:"inputE2,omitempty"`
