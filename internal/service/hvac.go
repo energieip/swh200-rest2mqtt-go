@@ -156,11 +156,6 @@ func (s *Service) receivedHvacSetup(setup dhvac.HvacSetup) {
 		rlog.Error("Cannot login to: ", err.Error())
 		return
 	}
-	err = s.hvacInit(setup, hvac.IP, token)
-	if err != nil {
-		rlog.Error("Cannot apply init config: ", err.Error())
-		return
-	}
 
 	err = s.setHvacSetupRegulation(setup, hvac.IP, token)
 	if err != nil {
@@ -175,6 +170,11 @@ func (s *Service) receivedHvacSetup(setup dhvac.HvacSetup) {
 	err = s.setHvacSetupOutputs(setup, hvac.IP, token)
 	if err != nil {
 		rlog.Error("Cannot apply outputs config: ", err.Error())
+		return
+	}
+	err = s.hvacInit(setup, hvac.IP, token)
+	if err != nil {
+		rlog.Error("Cannot apply init config: ", err.Error())
 		return
 	}
 	if setup.Group != nil {

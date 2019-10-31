@@ -150,14 +150,14 @@ type HvacInput struct {
 }
 
 type HvacInputValues struct {
-	InputE1 int `json:"input_E1"`
-	InputE2 int `json:"input_E2"`
-	InputE3 int `json:"input_E3"`
-	InputE4 int `json:"input_E4"`
-	InputE5 int `json:"input_E5"`
-	InputE6 int `json:"input_E6"`
-	InputC1 int `json:"input_C1"`
-	InputC2 int `json:"input_C2"`
+	InputE1 int `json:"inputE1"`
+	InputE2 int `json:"inputE2"`
+	InputE3 int `json:"inputE3"`
+	InputE4 int `json:"inputE4"`
+	InputE5 int `json:"inputE5"`
+	InputE6 int `json:"inputE6"`
+	InputC1 int `json:"inputC1"`
+	InputC2 int `json:"inputC2"`
 }
 
 type HvacOutput struct {
@@ -170,10 +170,10 @@ type HvacOutput struct {
 }
 
 type HvacOutputValues struct {
-	OutputY5 int `json:"output_Y5"`
-	OutputY6 int `json:"output_Y6"`
-	OutputY7 int `json:"output_Y7"`
-	OutputY8 int `json:"output_Y8"`
-	OutputYa int `json:"output_Ya"`
-	OutputYb int `json:"output_Yb"`
+	OutputY5 int `json:"outputY5"`
+	OutputY6 int `json:"outputY6"`
+	OutputY7 int `json:"outputY7"`
+	OutputY8 int `json:"outputY8"`
+	OutputYa int `json:"outputYa"`
+	OutputYb int `json:"outputYb"`
 }
