@@ -127,6 +127,7 @@ func (s *Service) sendDump(status dhvac.Hvac) {
 	status.OutputYa = outputValues.OutputYa
 	status.OutputYb = outputValues.OutputYb
 	status.Shift = int((float32(info.Regulation.OffsetTemp) * infoRegul.TemperOffsetStep) * 10)
+	status.TemperatureSelect = int(info.Regulation.EffectifSetPoint*10) + status.Shift
 	status.Error = 0
 
 	s.hvacs.Set(strings.ToUpper(status.Mac), status)
