@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	DefaultTimerDump = 1000
+	DefaultTimerDump = 10000
 )
 
 type systemError struct {
