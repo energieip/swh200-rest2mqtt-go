@@ -24,4 +24,8 @@ fi
 
 #echo "$(date) Get $1 IP: $ip MAC: $mac" >> /tmp/log.txt
 
-$(new-device -c /etc/energieip-swh200-rest2mqtt/config.json -i "$ip" -m "$mac")
+if  [[ $mac == *":"* ]]; then
+  $(new-device -c /etc/energieip-swh200-rest2mqtt/config.json -i "$ip" -m "$mac")
+else
+  echo "$(date) Invalid mac found $mac" >> /tmp/log.txt
+fi
