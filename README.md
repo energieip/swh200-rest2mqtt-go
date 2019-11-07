@@ -40,7 +40,7 @@ To compile it:
 ```
     make bin/energieip-swh200-rest2mqtt-armhf
 ```
-* To create debian archive for x86:
+* To create debian archive for arm:
 ```
     make deb-armhf
 ```
