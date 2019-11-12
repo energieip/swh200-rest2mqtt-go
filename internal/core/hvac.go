@@ -198,3 +198,8 @@ type HvacOutputValues struct {
 	OutputYa int `json:"outputYa"`
 	OutputYb int `json:"outputYb"`
 }
+
+type HvacUpdateParams struct {
+	TftpServerIP string `json:"tftpServerIP"`
+	StartUpdate  bool   `json:"startUpdate"`
+}

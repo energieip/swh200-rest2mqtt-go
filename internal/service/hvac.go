@@ -223,6 +223,41 @@ func (s *Service) receivedHvacUpdate(conf dhvac.HvacConf) {
 	s.hvacSetAFConfig(conf, hvac.IP, token)
 }
 
+func (s *Service) updateHvac(IP string) error {
+	url := "https://" + IP + ":3000/api/updateParam"
+
+	config := core.HvacUpdateParams{
+		TftpServerIP: "10.0.0.2",
+		StartUpdate:  true,
+	}
+
+	requestBody, err := json.Marshal(config)
+	if err != nil {
+		return err
+	}
+
+	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("x-access-token", s.conf.ClientAPI.URLToken)
+	req.Close = true
+	transCfg := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+	}
+	client := &http.Client{Transport: transCfg}
+	resp, err := client.Do(req)
+
+	if err != nil {
+		rlog.Error(err.Error())
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return NewError("Incorrect Status code")
+	}
+	rlog.Info("Update finished successfully")
+	return nil
+}
+
 func (s *Service) newHvac(new interface{}) error {
 	driver, err := core.ToDevice(new)
 	if err != nil || driver == nil {
@@ -237,6 +272,9 @@ func (s *Service) newHvac(new interface{}) error {
 		rlog.Info("Retry connection to HVAC ", driver.Mac)
 		token, err = s.hvacLogin(driver.IP)
 		if err != nil {
+			rlog.Info("Try to update from modbus to REST")
+			errF := s.updateHvac(driver.IP)
+			rlog.Error("Update arcom", errF)
 			return err
 		}
 	}
