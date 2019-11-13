@@ -224,7 +224,7 @@ func (s *Service) receivedHvacUpdate(conf dhvac.HvacConf) {
 }
 
 func (s *Service) updateHvac(IP string) error {
-	url := "https://" + IP + ":3000/api/updateParam"
+	url := "http://" + IP + ":3000/api/updateParam"
 
 	config := core.HvacUpdateParams{
 		TftpServerIP: "10.0.0.2",
