@@ -126,6 +126,8 @@ func (s *Service) sendDump(status dhvac.Hvac) {
 	status.OutputY8 = outputValues.OutputY8
 	status.OutputYa = outputValues.OutputYa
 	status.OutputYb = outputValues.OutputYb
+	status.Forcing6WaysValve = outputValues.OutputY5
+	status.ForcingDamper = outputValues.OutputY6
 	status.Shift = int((float32(info.Regulation.OffsetTemp) * infoRegul.TemperOffsetStep) * 10)
 	status.TemperatureSelect = int(info.Regulation.EffectifSetPoint*10) + status.Shift
 	status.Error = 0
@@ -485,20 +487,13 @@ func (s *Service) setHvacRuntime(conf dhvac.HvacConf, status dhvac.Hvac, IP stri
 		}
 	}
 
-	if conf.TargetMode != nil {
-		if param.Regulation == nil {
-			airReg := core.HvacRegulationCtrl{}
-			param.Regulation = &airReg
-		}
-		pres := *conf.Presence
-		if pres {
-			mode := dhvac.OCCUPANCY_COMFORT
-			param.Regulation.OccManCmd = &mode
-		} else {
-			mode := dhvac.OCCUPANCY_STANDBY
-			param.Regulation.OccManCmd = &mode
-		}
-	}
+	// if conf.TargetMode != nil {
+	// 	if param.Regulation == nil {
+	// 		airReg := core.HvacRegulationCtrl{}
+	// 		param.Regulation = &airReg
+	// 	}
+	// 	param.Regulation.OccManCmd = conf.TargetMode
+	// }
 
 	if conf.Presence != nil {
 		if param.Regulation == nil {
