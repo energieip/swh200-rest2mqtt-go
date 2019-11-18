@@ -203,3 +203,7 @@ type HvacUpdateParams struct {
 	TftpServerIP string `json:"tftpServerIP"`
 	StartUpdate  bool   `json:"startUpdate"`
 }
+
+type HvacTask struct {
+	Running bool `json:"running"`
+}
