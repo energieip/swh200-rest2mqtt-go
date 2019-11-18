@@ -497,18 +497,23 @@ func (s *Service) setHvacRuntime(conf dhvac.HvacConf, status dhvac.Hvac, IP stri
 		}
 	}
 
-	if conf.TargetMode != nil {
-		// 0 = OCCUPANCY_AUTO
-		// 1 = OCCUPANCY_COMFORT
-		// 2 = OCCUPANCY_STANDBY
-		// 3 = OCCUPANCY_ECONOMY
-		// 4 = OCCUPANCY_BUILDING_PROTECTION
+	testRunning, _ := s.getHvacMaintenanceMode(status.IP, token)
+	if testRunning != nil && testRunning.Running != true {
+		if conf.TargetMode != nil {
+			// 0 = OCCUPANCY_AUTO
+			// 1 = OCCUPANCY_COMFORT
+			// 2 = OCCUPANCY_STANDBY
+			// 3 = OCCUPANCY_ECONOMY
+			// 4 = OCCUPANCY_BUILDING_PROTECTION
 
-		if param.Regulation == nil {
-			airReg := core.HvacRegulationCtrl{}
-			param.Regulation = &airReg
+			if param.Regulation == nil {
+				airReg := core.HvacRegulationCtrl{}
+				param.Regulation = &airReg
+			}
+			param.Regulation.OccManCmd = conf.TargetMode
 		}
-		param.Regulation.OccManCmd = conf.TargetMode
+	} else {
+		rlog.Info("A test is running on ", status.Mac)
 	}
 
 	if conf.HeatCool != nil {
@@ -706,6 +711,39 @@ func (s *Service) setHvacMaintenanceMode(conf dhvac.HvacConf, status dhvac.Hvac,
 		return NewError("Incorrect Status code")
 	}
 	return nil
+}
+
+func (s *Service) getHvacMaintenanceMode(IP string, token string) (*core.HvacTask, error) {
+	url := "https://" + IP + "/api/maintenance/hvacTaskStatus"
+
+	req, _ := http.NewRequest("GET", url, nil)
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("authorization", "Bearer "+token)
+	req.Close = true
+	transCfg := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+	}
+	client := &http.Client{Transport: transCfg}
+	resp, err := client.Do(req)
+
+	if err != nil {
+		rlog.Error(err.Error())
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return nil, NewError("Incorrect Status code")
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+
+	status := core.HvacTask{}
+	err = json.Unmarshal(body, &status)
+	if err != nil {
+		rlog.Error("Cannot parse body: " + err.Error())
+		return nil, err
+	}
+	return &status, nil
 }
 
 func (s *Service) setHvacSetupAirRegister(setup dhvac.HvacSetup, IP string, token string) error {
