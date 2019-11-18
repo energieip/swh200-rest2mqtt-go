@@ -496,7 +496,9 @@ func (s *Service) setHvacRuntime(conf dhvac.HvacConf, status dhvac.Hvac, IP stri
 	// }
 
 	if conf.Presence != nil {
-		if status.HeatCool1 == dhvac.OCCUPANCY_STANDBY {
+		if status.HeatCool1 == dhvac.OCCUPANCY_STANDBY ||
+			status.HeatCool1 == dhvac.OCCUPANCY_COMFORT ||
+			((conf.HeatCool != nil) && ((*conf.HeatCool == dhvac.OCCUPANCY_STANDBY) || (*conf.HeatCool == dhvac.OCCUPANCY_COMFORT))) {
 			//The presence is only takes into account in Standby mode
 			if param.Regulation == nil {
 				airReg := core.HvacRegulationCtrl{}
