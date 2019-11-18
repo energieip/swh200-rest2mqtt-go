@@ -126,8 +126,18 @@ func (s *Service) sendDump(status dhvac.Hvac) {
 	status.OutputY8 = outputValues.OutputY8
 	status.OutputYa = outputValues.OutputYa
 	status.OutputYb = outputValues.OutputYb
-	status.Forcing6WaysValve = outputValues.OutputY5
-	status.ForcingDamper = outputValues.OutputY6
+
+	testValues, err := s.getHvacMaintenanceOutputs(status.IP, token)
+	if err != nil {
+		status.Error = 2
+		s.hvacs.Set(strings.ToUpper(status.Mac), status)
+		dump, _ := status.ToJSON()
+		s.local.SendCommand("/read/hvac/"+status.Mac+"/"+pconst.UrlStatus, dump)
+		return
+	}
+
+	status.Forcing6WaysValve = testValues.OutputY5
+	status.ForcingDamper = testValues.OutputY6
 	status.Shift = int((float32(info.Regulation.OffsetTemp) * infoRegul.TemperOffsetStep) * 10)
 	status.TemperatureSelect = int(info.Regulation.EffectifSetPoint*10) + status.Shift
 	status.Error = 0
@@ -951,6 +961,39 @@ func (s *Service) getHvacSetupInputs(IP string, token string) (*core.HvacInputVa
 	body, err := ioutil.ReadAll(resp.Body)
 
 	status := core.HvacInputValues{}
+	err = json.Unmarshal(body, &status)
+	if err != nil {
+		rlog.Error("Cannot parse body: " + err.Error())
+		return nil, err
+	}
+	return &status, nil
+}
+
+func (s *Service) getHvacMaintenanceOutputs(IP string, token string) (*core.HvacOutputValues, error) {
+	url := "https://" + IP + "/api/maintenance/outputs"
+
+	req, _ := http.NewRequest("GET", url, nil)
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("authorization", "Bearer "+token)
+	req.Close = true
+	transCfg := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+	}
+	client := &http.Client{Transport: transCfg}
+	resp, err := client.Do(req)
+
+	if err != nil {
+		rlog.Error(err.Error())
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return nil, NewError("Incorrect Status code")
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+
+	status := core.HvacOutputValues{}
 	err = json.Unmarshal(body, &status)
 	if err != nil {
 		rlog.Error("Cannot parse body: " + err.Error())
