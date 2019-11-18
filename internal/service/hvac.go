@@ -497,23 +497,18 @@ func (s *Service) setHvacRuntime(conf dhvac.HvacConf, status dhvac.Hvac, IP stri
 		}
 	}
 
-	testRunning, _ := s.getHvacMaintenanceMode(status.IP, token)
-	if testRunning != nil && testRunning.Running != true {
-		if conf.TargetMode != nil {
-			// 0 = OCCUPANCY_AUTO
-			// 1 = OCCUPANCY_COMFORT
-			// 2 = OCCUPANCY_STANDBY
-			// 3 = OCCUPANCY_ECONOMY
-			// 4 = OCCUPANCY_BUILDING_PROTECTION
+	if conf.TargetMode != nil {
+		// 0 = OCCUPANCY_AUTO
+		// 1 = OCCUPANCY_COMFORT
+		// 2 = OCCUPANCY_STANDBY
+		// 3 = OCCUPANCY_ECONOMY
+		// 4 = OCCUPANCY_BUILDING_PROTECTION
 
-			if param.Regulation == nil {
-				airReg := core.HvacRegulationCtrl{}
-				param.Regulation = &airReg
-			}
-			param.Regulation.OccManCmd = conf.TargetMode
+		if param.Regulation == nil {
+			airReg := core.HvacRegulationCtrl{}
+			param.Regulation = &airReg
 		}
-	} else {
-		rlog.Info("A test is running on ", status.Mac)
+		param.Regulation.OccManCmd = conf.TargetMode
 	}
 
 	if conf.HeatCool != nil {
@@ -529,6 +524,7 @@ func (s *Service) setHvacRuntime(conf dhvac.HvacConf, status dhvac.Hvac, IP stri
 			param.Regulation = &airReg
 		}
 		param.Regulation.HeatCool = conf.HeatCool
+		rlog.Infof("Switch HVAC %r: in %r", status.Mac, *conf.HeatCool)
 	}
 
 	if conf.Presence != nil {
@@ -577,7 +573,7 @@ func (s *Service) setHvacRuntime(conf dhvac.HvacConf, status dhvac.Hvac, IP stri
 	}
 
 	if conf.HeatCool != nil && *conf.HeatCool == dhvac.HVAC_MODE_TEST {
-		err = s.setHvacMaintenanceMode(conf, status, status.IP, token, true)
+		err = s.setHvacMaintenanceMode(conf, status, status.IP, token, false)
 		if err != nil {
 			return err
 		}
@@ -597,7 +593,7 @@ func (s *Service) setHvacRuntime(conf dhvac.HvacConf, status dhvac.Hvac, IP stri
 
 	if conf.ForcingAutoBack != nil {
 		if *conf.ForcingAutoBack == 1 {
-			err = s.setHvacMaintenanceMode(conf, status, status.IP, token, false)
+			err = s.setHvacMaintenanceMode(conf, status, status.IP, token, true)
 			if err != nil {
 				return err
 			}
