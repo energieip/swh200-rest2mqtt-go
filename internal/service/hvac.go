@@ -487,15 +487,28 @@ func (s *Service) setHvacRuntime(conf dhvac.HvacConf, status dhvac.Hvac, IP stri
 		}
 	}
 
-	// if conf.TargetMode != nil {
-	// 	if param.Regulation == nil {
-	// 		airReg := core.HvacRegulationCtrl{}
-	// 		param.Regulation = &airReg
-	// 	}
-	// 	param.Regulation.OccManCmd = conf.TargetMode
-	// }
+	if conf.TargetMode != nil {
+		// 0 = OCCUPANCY_AUTO
+		// 1 = OCCUPANCY_COMFORT
+		// 2 = OCCUPANCY_STANDBY
+		// 3 = OCCUPANCY_ECONOMY
+		// 4 = OCCUPANCY_BUILDING_PROTECTION
+
+		if param.Regulation == nil {
+			airReg := core.HvacRegulationCtrl{}
+			param.Regulation = &airReg
+		}
+		param.Regulation.OccManCmd = conf.TargetMode
+	}
 
 	if conf.HeatCool != nil {
+		// 0 = HC_MODE_AUTO
+		// 1 = HC_MODE_HEAT
+		// 3 = HC_MODE_COOL
+		// 6 = HC_MODE_OFF
+		// 7 = HC_MODE_TEST
+		// 8 = HC_MODE_EMERGENCY_HEAT
+
 		if param.Regulation == nil {
 			airReg := core.HvacRegulationCtrl{}
 			param.Regulation = &airReg
@@ -504,9 +517,9 @@ func (s *Service) setHvacRuntime(conf dhvac.HvacConf, status dhvac.Hvac, IP stri
 	}
 
 	if conf.Presence != nil {
-		if status.HeatCool1 == dhvac.OCCUPANCY_STANDBY ||
-			status.HeatCool1 == dhvac.OCCUPANCY_COMFORT ||
-			((conf.HeatCool != nil) && ((*conf.HeatCool == dhvac.OCCUPANCY_STANDBY) || (*conf.HeatCool == dhvac.OCCUPANCY_COMFORT))) {
+		if status.OccManCmd1 == dhvac.OCCUPANCY_STANDBY ||
+			status.OccManCmd1 == dhvac.OCCUPANCY_COMFORT ||
+			((conf.TargetMode != nil) && ((*conf.TargetMode == dhvac.OCCUPANCY_STANDBY) || (*conf.TargetMode == dhvac.OCCUPANCY_COMFORT))) {
 			//The presence is only takes into account in Standby mode
 			if param.Regulation == nil {
 				airReg := core.HvacRegulationCtrl{}
