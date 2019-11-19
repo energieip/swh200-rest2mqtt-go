@@ -573,30 +573,18 @@ func (s *Service) setHvacRuntime(conf dhvac.HvacConf, status dhvac.Hvac, IP stri
 	}
 
 	if conf.HeatCool != nil && *conf.HeatCool == dhvac.HVAC_MODE_TEST {
-		err = s.setHvacMaintenanceMode(conf, status, status.IP, token, false)
-		if err != nil {
-			return err
-		}
-
-		err = s.setHvacMaintenanceParam(conf, status, status.IP, token)
-		if err != nil {
-			return err
-		}
+		s.setHvacMaintenanceMode(conf, status, status.IP, token, false)
+		s.setHvacMaintenanceParam(conf, status, status.IP, token)
 	}
 
 	if status.HeatCool1 == dhvac.HVAC_MODE_TEST {
-		err = s.setHvacMaintenanceParam(conf, status, status.IP, token)
-		if err != nil {
-			return err
-		}
+		s.setHvacMaintenanceParam(conf, status, status.IP, token)
 	}
 
 	if conf.ForcingAutoBack != nil {
 		if *conf.ForcingAutoBack == 1 {
-			err = s.setHvacMaintenanceMode(conf, status, status.IP, token, true)
-			if err != nil {
-				return err
-			}
+			s.setHvacMaintenanceMode(conf, status, status.IP, token, true)
+
 			urlBack := "https://" + IP + "/api/runtime/hvac/loop1"
 			defaultBack := dhvac.HVAC_MODE_AUTO
 			paramback := core.HvacLoopCtrl{}
