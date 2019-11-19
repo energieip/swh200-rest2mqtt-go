@@ -49,6 +49,7 @@ func (s *Service) sendDump(status dhvac.Hvac) {
 		s.local.SendCommand("/read/hvac/"+status.Mac+"/"+pconst.UrlStatus, dump)
 		return
 	}
+	s.driversSeen.Set(strings.ToUpper(status.Mac), time.Now().UTC())
 
 	info, err := s.hvacGetStatus(status.IP, token)
 	if err != nil {
@@ -66,6 +67,17 @@ func (s *Service) sendDump(status dhvac.Hvac) {
 	status.DewSensor1 = info.Regulation.DewSensor
 	status.SpaceTemp1 = int(info.Regulation.SpaceTemp * 10)
 	status.HeatCool1 = info.Regulation.HeatCool
+	maintenance, _ := s.getHvacMaintenanceMode(status.IP, token)
+	if maintenance == nil {
+		status.Error = 2
+		s.hvacs.Set(strings.ToUpper(status.Mac), status)
+		dump, _ := status.ToJSON()
+		s.local.SendCommand("/read/hvac/"+status.Mac+"/"+pconst.UrlStatus, dump)
+		return
+	}
+	if maintenance.Running == true {
+		status.HeatCool1 = dhvac.HVAC_MODE_TEST
+	}
 	status.CoolOutput1 = info.Regulation.CoolOutput
 	status.HeatOutput1 = info.Regulation.HeatOutput
 	status.EffectSetPoint1 = int(info.Regulation.EffectifSetPoint * 10)
@@ -143,7 +155,6 @@ func (s *Service) sendDump(status dhvac.Hvac) {
 	status.Error = 0
 
 	s.hvacs.Set(strings.ToUpper(status.Mac), status)
-	s.driversSeen.Set(strings.ToUpper(status.Mac), time.Now().UTC())
 
 	dump, _ := status.ToJSON()
 	s.local.SendCommand("/read/hvac/"+status.Mac+"/"+pconst.UrlStatus, dump)
@@ -519,12 +530,33 @@ func (s *Service) setHvacRuntime(conf dhvac.HvacConf, status dhvac.Hvac, IP stri
 		// 7 = HC_MODE_TEST
 		// 8 = HC_MODE_EMERGENCY_HEAT
 
-		if param.Regulation == nil {
-			airReg := core.HvacRegulationCtrl{}
-			param.Regulation = &airReg
+		if *conf.HeatCool != dhvac.HVAC_MODE_TEST {
+			if status.HeatCool1 != dhvac.HVAC_MODE_TEST {
+				if param.Regulation == nil {
+					airReg := core.HvacRegulationCtrl{}
+					param.Regulation = &airReg
+				}
+				param.Regulation.HeatCool = conf.HeatCool
+			} else {
+				s.setHvacMaintenanceBackMode(status.IP, token)
+				rlog.Info("HVAC leave test mode", status.Mac)
+			}
+		} else {
+			rlog.Info("HVAC enter in test mode", status.Mac)
+			err := s.setHvacMaintenanceMode(conf, status, status.IP, token, false)
+			if err != nil {
+				rlog.Error("Cannot switch in test mode", err)
+			}
+			s.setHvacMaintenanceParam(conf, status, status.IP, token)
+			if err != nil {
+				rlog.Error("Cannot prepare test mode", err)
+			}
 		}
-		param.Regulation.HeatCool = conf.HeatCool
 		rlog.Infof("Switch HVAC %r: in %r", status.Mac, *conf.HeatCool)
+	}
+
+	if status.HeatCool1 == dhvac.HVAC_MODE_TEST {
+		s.setHvacMaintenanceParam(conf, status, status.IP, token)
 	}
 
 	if conf.Presence != nil {
@@ -572,50 +604,10 @@ func (s *Service) setHvacRuntime(conf dhvac.HvacConf, status dhvac.Hvac, IP stri
 		return NewError("Incorrect Status code")
 	}
 
-	if conf.HeatCool != nil && *conf.HeatCool == dhvac.HVAC_MODE_TEST {
-		s.setHvacMaintenanceMode(conf, status, status.IP, token, false)
-		s.setHvacMaintenanceParam(conf, status, status.IP, token)
-	}
-
-	if status.HeatCool1 == dhvac.HVAC_MODE_TEST {
-		s.setHvacMaintenanceParam(conf, status, status.IP, token)
-	}
-
 	if conf.ForcingAutoBack != nil {
 		if *conf.ForcingAutoBack == 1 {
-			s.setHvacMaintenanceMode(conf, status, status.IP, token, true)
-
-			urlBack := "https://" + IP + "/api/runtime/hvac/loop1"
-			defaultBack := dhvac.HVAC_MODE_AUTO
-			paramback := core.HvacLoopCtrl{}
-			airReg := core.HvacRegulationCtrl{}
-			paramback.Regulation = &airReg
-
-			paramback.Regulation.HeatCool = &defaultBack
-			requestBodyBack, err := json.Marshal(paramback)
-			if err != nil {
-				return err
-			}
-			rlog.Infof("Switch back to auto mode %v: %v", status.Mac, string(requestBodyBack))
-
-			req, _ := http.NewRequest("POST", urlBack, bytes.NewBuffer(requestBodyBack))
-			req.Header.Add("Content-Type", "application/json")
-			req.Header.Set("authorization", "Bearer "+token)
-			req.Close = true
-			transCfg := &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
-			}
-			client := &http.Client{Transport: transCfg}
-			resp, err := client.Do(req)
-
-			if err != nil {
-				rlog.Error(err.Error())
-				return err
-			}
-			defer resp.Body.Close()
-			if resp.StatusCode != 200 {
-				return NewError("Incorrect Status code")
-			}
+			s.setHvacMaintenanceBackMode(status.IP, token)
+			rlog.Info("HVAC leave test mode", status.Mac)
 		}
 	}
 	return nil
@@ -695,6 +687,39 @@ func (s *Service) setHvacMaintenanceMode(conf dhvac.HvacConf, status dhvac.Hvac,
 		return NewError("Incorrect Status code")
 	}
 	return nil
+}
+
+func (s *Service) setHvacMaintenanceBackMode(IP string, token string) (*core.HvacTask, error) {
+	url := "https://" + IP + "/api/reboot"
+
+	req, _ := http.NewRequest("GET", url, nil)
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("authorization", "Bearer "+token)
+	req.Close = true
+	transCfg := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+	}
+	client := &http.Client{Transport: transCfg}
+	resp, err := client.Do(req)
+
+	if err != nil {
+		rlog.Error(err.Error())
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return nil, NewError("Incorrect Status code")
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+
+	status := core.HvacTask{}
+	err = json.Unmarshal(body, &status)
+	if err != nil {
+		rlog.Error("Cannot parse body: " + err.Error())
+		return nil, err
+	}
+	return &status, nil
 }
 
 func (s *Service) getHvacMaintenanceMode(IP string, token string) (*core.HvacTask, error) {

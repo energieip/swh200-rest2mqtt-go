@@ -158,7 +158,6 @@ func (s *Service) cronDump() {
 
 //Run service mainloop
 func (s *Service) Run() error {
-	//TODO manage case restart with already connected device???
 	go s.cronDump()
 	for {
 		select {
