@@ -322,6 +322,23 @@ func (s *Service) newHvac(new interface{}) error {
 	return nil
 }
 
+func (s *Service) reloadHvac(new interface{}) error {
+	driver, err := core.ToDevice(new)
+	if err != nil || driver == nil {
+		return err
+	}
+	rlog.Info("Reload HVAC config ", driver.Mac)
+	hvac, ok := s.hvacs.Get(strings.ToUpper(driver.Mac))
+	if ok {
+		// check for IP changing
+		d, _ := dhvac.ToHvac(hvac)
+		d.IP = driver.IP
+		s.hvacs.Set(strings.ToUpper(d.Mac), d)
+		return nil
+	}
+	return s.newHvac(new)
+}
+
 func (s *Service) hvacGetStatus(IP string, token string) (*core.HvacLoop1, error) {
 	url := "https://" + IP + "/api/runtime/hvac/loop1"
 
@@ -457,6 +474,11 @@ func (s *Service) getHvacSetpoints(IP string, token string) (*core.HvacSetPoints
 }
 
 func (s *Service) setHvacRuntime(conf dhvac.HvacConf, status dhvac.Hvac, IP string, token string) error {
+	loopHvac := false
+	maintenance, _ := s.getHvacMaintenanceMode(status.IP, token)
+	if maintenance != nil {
+		loopHvac = maintenance.Running
+	}
 	url := "https://" + IP + "/api/runtime/hvac/loop1"
 
 	param := core.HvacLoopCtrl{}
@@ -521,12 +543,6 @@ func (s *Service) setHvacRuntime(conf dhvac.HvacConf, status dhvac.Hvac, IP stri
 			param.Regulation = &airReg
 		}
 		param.Regulation.OccManCmd = conf.TargetMode
-	}
-
-	loopHvac := false
-	maintenance, _ := s.getHvacMaintenanceMode(status.IP, token)
-	if maintenance != nil {
-		loopHvac = maintenance.Running
 	}
 
 	if conf.HeatCool != nil {

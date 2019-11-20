@@ -119,7 +119,7 @@ func (s *Service) coldBootStart() {
 		mac := elts[1]
 		ip := elts[0]
 		if strings.HasPrefix(mac, "F2:23") {
-			rlog.Info("Skip EIP device: ", mac)
+			// rlog.Info("Skip EIP device: ", mac)
 			continue
 		}
 		device := core.Device{
@@ -130,6 +130,45 @@ func (s *Service) coldBootStart() {
 		s.newHvac(device)
 	}
 	rlog.Info("End coldBoot device Scan")
+}
+
+func (s *Service) nmapScan() {
+	nmap := exec.Command("nmap", "-sP", "10.0.0.0/24")
+	filter := exec.Command("awk", "/Nmap scan report for/{printf $5;}/MAC Address:/{print \" => \"$3;}")
+
+	r, w := io.Pipe()
+	nmap.Stdout = w
+	filter.Stdin = r
+
+	var result bytes.Buffer
+	filter.Stdout = &result
+
+	rlog.Info("Start nmap device Scan")
+
+	nmap.Start()
+	filter.Start()
+	nmap.Wait()
+	w.Close()
+	filter.Wait()
+
+	for _, line := range strings.Split(result.String(), "\n") {
+		elts := strings.Split(line, " => ")
+		if len(elts) != 2 {
+			continue
+		}
+		mac := elts[1]
+		ip := elts[0]
+		if strings.HasPrefix(mac, "F2:23") {
+			continue
+		}
+		device := core.Device{
+			Mac: mac,
+			IP:  ip,
+		}
+		rlog.Info("nmap found device : ", device)
+		s.reloadHvac(device)
+	}
+	rlog.Info("End nmap device Scan")
 }
 
 //Stop service
@@ -156,26 +195,37 @@ func (s *Service) cronDump() {
 	}
 }
 
+func (s *Service) cronNmap() {
+	timerDump := time.NewTicker(2 * time.Minute)
+	for {
+		select {
+		case <-timerDump.C:
+			s.nmapScan()
+		}
+	}
+}
+
 //Run service mainloop
 func (s *Service) Run() error {
 	go s.cronDump()
+	go s.cronNmap()
 	for {
 		select {
 		case evtUpdate := <-s.local.EventsConf:
 			for _, event := range evtUpdate {
-				s.receivedHvacUpdate(event)
+				go s.receivedHvacUpdate(event)
 			}
 
 		case evtSetup := <-s.local.EventsSetup:
 			for _, event := range evtSetup {
-				s.receivedHvacSetup(event)
+				go s.receivedHvacSetup(event)
 			}
 
 		case evtAPI := <-s.api.EventsToBackend:
 			for evtType, content := range evtAPI {
 				switch evtType {
 				case "newDevice":
-					go s.newHvac(content)
+					go s.reloadHvac(content)
 				}
 			}
 		}
