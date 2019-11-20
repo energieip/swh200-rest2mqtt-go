@@ -109,6 +109,7 @@ func main() {
 	transCfg := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
 	}
+	req.Close = true
 	client := &http.Client{Transport: transCfg}
 	resp, err := client.Do(req)
 
