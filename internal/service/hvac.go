@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -553,16 +554,19 @@ func (s *Service) setHvacRuntime(conf dhvac.HvacConf, status dhvac.Hvac, IP stri
 			if err != nil {
 				rlog.Error("Cannot switch in test mode", err)
 			}
-			s.setHvacMaintenanceParam(conf, status, status.IP, token)
+			err = s.setHvacMaintenanceParam(conf, status, status.IP, token)
 			if err != nil {
 				rlog.Error("Cannot prepare test mode", err)
 			}
 		}
-		rlog.Infof("Switch HVAC %r: in %r", status.Mac, *conf.HeatCool)
+		rlog.Infof("Switch HVAC " + status.Mac + ": in " + strconv.Itoa(*conf.HeatCool))
 	}
 
 	if (conf.HeatCool == nil || *conf.HeatCool == dhvac.HVAC_MODE_TEST) && loopHvac == false {
-		s.setHvacMaintenanceParam(conf, status, status.IP, token)
+		err := s.setHvacMaintenanceParam(conf, status, status.IP, token)
+		if err != nil {
+			rlog.Error("Cannot send in test mode parameters ", err)
+		}
 	}
 
 	if conf.Presence != nil {
@@ -623,24 +627,17 @@ func (s *Service) setHvacMaintenanceParam(conf dhvac.HvacConf, status dhvac.Hvac
 	//Prepare Maintenance Outputs
 	urlTask := "https://" + IP + "/api/maintenance/outputs"
 
-	defaultOutput := 100
-	paramTask := core.HvacOutput{
-		OutputYa: &defaultOutput,
-		OutputYb: &defaultOutput,
-	}
+	requestBodyTask := `{"output_Ya": 100, "output_Yb": 100`
 	if conf.Forcing6waysValve != nil {
-		paramTask.OutputY5 = conf.Forcing6waysValve
+		requestBodyTask += `, "output_Y5": ` + strconv.Itoa(*conf.Forcing6waysValve)
 	}
 	if conf.ForcingDamper != nil {
-		paramTask.OutputY6 = conf.ForcingDamper
+		requestBodyTask += `, "output_Y6": ` + strconv.Itoa(*conf.ForcingDamper)
 	}
-	requestBodyTask, err := json.Marshal(paramTask)
-	if err != nil {
-		return err
-	}
-	rlog.Infof("Switch HVAC in test Mode %v: %v", status.Mac, string(requestBodyTask))
+	requestBodyTask += `}`
+	rlog.Infof("Send HVAC test Mode parameters " + status.Mac + " : " + string(requestBodyTask))
 
-	req, _ := http.NewRequest("POST", urlTask, bytes.NewBuffer(requestBodyTask))
+	req, _ := http.NewRequest("POST", urlTask, strings.NewReader(requestBodyTask))
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("authorization", "Bearer "+token)
 	req.Close = true

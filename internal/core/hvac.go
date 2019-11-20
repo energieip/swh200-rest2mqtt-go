@@ -190,6 +190,15 @@ type HvacOutput struct {
 	OutputYb *int `json:"outputYb,omitempty"`
 }
 
+type HvacMaintenanceOutput struct {
+	OutputY5 *int `json:"output_Y5,omitempty"`
+	OutputY6 *int `json:"output_Y6,omitempty"`
+	OutputY7 *int `json:"output_Y7,omitempty"`
+	OutputY8 *int `json:"output_Y8,omitempty"`
+	OutputYa *int `json:"output_Ya,omitempty"`
+	OutputYb *int `json:"output_Yb,omitempty"`
+}
+
 type HvacOutputValues struct {
 	OutputY5 int `json:"outputY5"`
 	OutputY6 int `json:"outputY6"`
