@@ -75,7 +75,7 @@ func (s *Service) sendDump(status dhvac.Hvac) {
 		s.local.SendCommand("/read/hvac/"+status.Mac+"/"+pconst.UrlStatus, dump)
 		return
 	}
-	if maintenance.Running == true {
+	if maintenance.Running != true {
 		status.HeatCool1 = dhvac.HVAC_MODE_TEST
 	}
 	status.CoolOutput1 = info.Regulation.CoolOutput
@@ -522,6 +522,12 @@ func (s *Service) setHvacRuntime(conf dhvac.HvacConf, status dhvac.Hvac, IP stri
 		param.Regulation.OccManCmd = conf.TargetMode
 	}
 
+	loopHvac := false
+	maintenance, _ := s.getHvacMaintenanceMode(status.IP, token)
+	if maintenance != nil {
+		loopHvac = maintenance.Running
+	}
+
 	if conf.HeatCool != nil {
 		// 0 = HC_MODE_AUTO
 		// 1 = HC_MODE_HEAT
@@ -531,7 +537,7 @@ func (s *Service) setHvacRuntime(conf dhvac.HvacConf, status dhvac.Hvac, IP stri
 		// 8 = HC_MODE_EMERGENCY_HEAT
 
 		if *conf.HeatCool != dhvac.HVAC_MODE_TEST {
-			if status.HeatCool1 != dhvac.HVAC_MODE_TEST {
+			if loopHvac == true {
 				if param.Regulation == nil {
 					airReg := core.HvacRegulationCtrl{}
 					param.Regulation = &airReg
@@ -543,7 +549,7 @@ func (s *Service) setHvacRuntime(conf dhvac.HvacConf, status dhvac.Hvac, IP stri
 			}
 		} else {
 			rlog.Info("HVAC enter in test mode", status.Mac)
-			err := s.setHvacMaintenanceMode(conf, status, status.IP, token, false)
+			err := s.setHvacMaintenanceMode(conf, status, status.IP, token)
 			if err != nil {
 				rlog.Error("Cannot switch in test mode", err)
 			}
@@ -555,7 +561,7 @@ func (s *Service) setHvacRuntime(conf dhvac.HvacConf, status dhvac.Hvac, IP stri
 		rlog.Infof("Switch HVAC %r: in %r", status.Mac, *conf.HeatCool)
 	}
 
-	if status.HeatCool1 == dhvac.HVAC_MODE_TEST {
+	if (conf.HeatCool == nil || *conf.HeatCool == dhvac.HVAC_MODE_TEST) && loopHvac == false {
 		s.setHvacMaintenanceParam(conf, status, status.IP, token)
 	}
 
@@ -655,20 +661,11 @@ func (s *Service) setHvacMaintenanceParam(conf dhvac.HvacConf, status dhvac.Hvac
 	return nil
 }
 
-func (s *Service) setHvacMaintenanceMode(conf dhvac.HvacConf, status dhvac.Hvac, IP string, token string, running bool) error {
-	// Switch in Test Mode
+func (s *Service) setHvacMaintenanceMode(conf dhvac.HvacConf, status dhvac.Hvac, IP string, token string) error {
 	urlTask := "https://" + IP + "/api/maintenance/hvacTaskStatus"
 
-	paramTask := core.HvacTask{
-		Running: running,
-	}
-	requestBodyTask, err := json.Marshal(paramTask)
-	if err != nil {
-		return err
-	}
-	rlog.Infof("Switch HVAC in test Mode %v: %v", status.Mac, string(requestBodyTask))
-
-	req, _ := http.NewRequest("POST", urlTask, bytes.NewBuffer(requestBodyTask))
+	body := strings.NewReader(`{"running": false}`)
+	req, _ := http.NewRequest("POST", urlTask, body)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("authorization", "Bearer "+token)
 	req.Close = true
