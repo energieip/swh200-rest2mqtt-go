@@ -1229,7 +1229,8 @@ func (s *Service) hvacSetAFConfig(setup dhvac.HvacConf, IP string, token string)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("authorization", "Bearer "+token)
 	transCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		TLSClientConfig:   &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		DisableKeepAlives: true,
 	}
 	client := &http.Client{Transport: transCfg}
 	resp, err := client.Do(req)
