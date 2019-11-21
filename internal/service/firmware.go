@@ -129,7 +129,7 @@ func (s *Service) coldBootStart() {
 			IP:  ip,
 		}
 		rlog.Info("coldBoot found device : ", device)
-		s.newHvac(device)
+		go s.newHvac(device)
 	}
 	rlog.Info("End coldBoot device Scan")
 	r.Close()
@@ -169,7 +169,7 @@ func (s *Service) nmapScan() {
 			IP:  ip,
 		}
 		rlog.Info("nmap found device : ", device)
-		s.reloadHvac(device)
+		go s.reloadHvac(device)
 	}
 	rlog.Info("End nmap device Scan")
 	r.Close()
