@@ -107,17 +107,19 @@ func main() {
 	url := "https://" + conf.InternalAPI.IP + ":" + conf.InternalAPI.Port + "/v1.0/driver/new"
 	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
 	transCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		TLSClientConfig:   &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		DisableKeepAlives: true,
 	}
 	req.Close = true
 	client := &http.Client{Transport: transCfg}
 	resp, err := client.Do(req)
-
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		rlog.Error(err.Error())
 		os.Exit(1)
 	}
-	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 
