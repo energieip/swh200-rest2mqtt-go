@@ -132,6 +132,7 @@ func (s *Service) coldBootStart() {
 		s.newHvac(device)
 	}
 	rlog.Info("End coldBoot device Scan")
+	r.Close()
 }
 
 func (s *Service) nmapScan() {
@@ -171,6 +172,7 @@ func (s *Service) nmapScan() {
 		s.reloadHvac(device)
 	}
 	rlog.Info("End nmap device Scan")
+	r.Close()
 }
 
 //Stop service

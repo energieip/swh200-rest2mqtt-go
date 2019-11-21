@@ -212,7 +212,7 @@ func (s *Service) receivedHvacSetup(setup dhvac.HvacSetup) {
 		hvac.Group = *setup.Group
 	}
 	hvac.Label = setup.Label
-	hvac.DumpFrequency = setup.DumpFrequency
+	hvac.DumpFrequency = DefaultTimerDump
 	hvac.IsConfigured = true
 	s.hvacs.Set(strings.ToUpper(hvac.Mac), hvac)
 }
@@ -265,16 +265,18 @@ func (s *Service) updateHvac(IP string) error {
 	req.Header.Set("x-access-token", s.conf.ClientAPI.URLToken)
 	req.Close = true
 	transCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		TLSClientConfig:   &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		DisableKeepAlives: true,
 	}
 	client := &http.Client{Transport: transCfg}
 	resp, err := client.Do(req)
-
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		rlog.Error(err.Error())
 		return err
 	}
-	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		return NewError("Incorrect Status code")
 	}
@@ -347,16 +349,18 @@ func (s *Service) hvacGetStatus(IP string, token string) (*core.HvacLoop1, error
 	req.Header.Add("Content-Type", "application/json")
 	req.Close = true
 	transCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		TLSClientConfig:   &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		DisableKeepAlives: true,
 	}
 	client := &http.Client{Transport: transCfg}
 	resp, err := client.Do(req)
-
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		rlog.Error(err.Error())
 		return nil, err
 	}
-	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 
@@ -376,16 +380,18 @@ func (s *Service) hvacGetVersion(IP string, token string) (*core.HvacSysInfo, er
 	req.Header.Set("authorization", "Bearer "+token)
 	req.Close = true
 	transCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		TLSClientConfig:   &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		DisableKeepAlives: true,
 	}
 	client := &http.Client{Transport: transCfg}
 	resp, err := client.Do(req)
-
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		rlog.Error("Cannot get version: " + err.Error())
 		return nil, err
 	}
-	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 
@@ -415,16 +421,18 @@ func (s *Service) hvacLogin(IP string) (string, error) {
 	req.Header.Add("Content-Type", "application/json")
 	req.Close = true
 	transCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		TLSClientConfig:   &tls.Config{InsecureSkipVerify: true},
+		DisableKeepAlives: true,
 	}
 	client := &http.Client{Transport: transCfg}
 	resp, err := client.Do(req)
-
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		rlog.Error("Cannot send request to: " + err.Error())
 		return "", err
 	}
-	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		return "", NewError("Incorrect Status code")
 	}
@@ -448,16 +456,18 @@ func (s *Service) getHvacSetpoints(IP string, token string) (*core.HvacSetPoints
 	req.Header.Set("authorization", "Bearer "+token)
 	req.Close = true
 	transCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		TLSClientConfig:   &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		DisableKeepAlives: true,
 	}
 	client := &http.Client{Transport: transCfg}
 	resp, err := client.Do(req)
-
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		rlog.Error(err.Error())
 		return nil, err
 	}
-	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		return nil, NewError("Incorrect Status code")
 	}
@@ -616,16 +626,19 @@ func (s *Service) setHvacRuntime(conf dhvac.HvacConf, status dhvac.Hvac, IP stri
 	req.Header.Set("authorization", "Bearer "+token)
 	req.Close = true
 	transCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		TLSClientConfig:   &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		DisableKeepAlives: true,
 	}
 	client := &http.Client{Transport: transCfg}
 	resp, err := client.Do(req)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 
 	if err != nil {
 		rlog.Error(err.Error())
 		return err
 	}
-	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		return NewError("Incorrect Status code")
 	}
@@ -658,16 +671,18 @@ func (s *Service) setHvacMaintenanceParam(conf dhvac.HvacConf, status dhvac.Hvac
 	req.Header.Set("authorization", "Bearer "+token)
 	req.Close = true
 	transCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		TLSClientConfig:   &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		DisableKeepAlives: true,
 	}
 	client := &http.Client{Transport: transCfg}
 	resp, err := client.Do(req)
-
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		rlog.Error(err.Error())
 		return err
 	}
-	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		return NewError("Incorrect Status code")
 	}
@@ -683,16 +698,18 @@ func (s *Service) setHvacMaintenanceMode(conf dhvac.HvacConf, status dhvac.Hvac,
 	req.Header.Set("authorization", "Bearer "+token)
 	req.Close = true
 	transCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		TLSClientConfig:   &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		DisableKeepAlives: true,
 	}
 	client := &http.Client{Transport: transCfg}
 	resp, err := client.Do(req)
-
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		rlog.Error(err.Error())
 		return err
 	}
-	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		return NewError("Incorrect Status code")
 	}
@@ -707,16 +724,18 @@ func (s *Service) setHvacMaintenanceBackMode(IP string, token string) (*core.Hva
 	req.Header.Set("authorization", "Bearer "+token)
 	req.Close = true
 	transCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		TLSClientConfig:   &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		DisableKeepAlives: true,
 	}
 	client := &http.Client{Transport: transCfg}
 	resp, err := client.Do(req)
-
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		rlog.Error(err.Error())
 		return nil, err
 	}
-	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		return nil, NewError("Incorrect Status code")
 	}
@@ -740,16 +759,18 @@ func (s *Service) getHvacMaintenanceMode(IP string, token string) (*core.HvacTas
 	req.Header.Set("authorization", "Bearer "+token)
 	req.Close = true
 	transCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		TLSClientConfig:   &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		DisableKeepAlives: true,
 	}
 	client := &http.Client{Transport: transCfg}
 	resp, err := client.Do(req)
-
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		rlog.Error(err.Error())
 		return nil, err
 	}
-	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		return nil, NewError("Incorrect Status code")
 	}
@@ -792,16 +813,18 @@ func (s *Service) setHvacSetupAirRegister(setup dhvac.HvacSetup, IP string, toke
 	req.Header.Set("authorization", "Bearer "+token)
 	req.Close = true
 	transCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		TLSClientConfig:   &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		DisableKeepAlives: true,
 	}
 	client := &http.Client{Transport: transCfg}
 	resp, err := client.Do(req)
-
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		rlog.Error(err.Error())
 		return err
 	}
-	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		return NewError("Incorrect Status code")
 	}
@@ -835,16 +858,19 @@ func (s *Service) setHvacSetupRegulation(setup dhvac.HvacSetup, IP string, token
 	req.Header.Set("authorization", "Bearer "+token)
 	req.Close = true
 	transCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		TLSClientConfig:   &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		DisableKeepAlives: true,
 	}
 	client := &http.Client{Transport: transCfg}
 	resp, err := client.Do(req)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 
 	if err != nil {
 		rlog.Error(err.Error())
 		return err
 	}
-	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		return NewError("Incorrect Status code")
 	}
@@ -892,16 +918,19 @@ func (s *Service) setHvacSetupInputs(setup dhvac.HvacSetup, IP string, token str
 	req.Header.Set("authorization", "Bearer "+token)
 	req.Close = true
 	transCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		TLSClientConfig:   &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		DisableKeepAlives: true,
 	}
 	client := &http.Client{Transport: transCfg}
 	resp, err := client.Do(req)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 
 	if err != nil {
 		rlog.Error(err.Error())
 		return err
 	}
-	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		return NewError("Incorrect Status code")
 	}
@@ -943,16 +972,18 @@ func (s *Service) setHvacSetupOutputs(setup dhvac.HvacSetup, IP string, token st
 	req.Header.Set("authorization", "Bearer "+token)
 	req.Close = true
 	transCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		TLSClientConfig:   &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		DisableKeepAlives: true,
 	}
 	client := &http.Client{Transport: transCfg}
 	resp, err := client.Do(req)
-
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		rlog.Error(err.Error())
 		return err
 	}
-	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		return NewError("Incorrect Status code")
 	}
@@ -968,16 +999,18 @@ func (s *Service) getHvacSetupRegulation(IP string, token string) (*core.HvacSet
 	req.Header.Set("authorization", "Bearer "+token)
 	req.Close = true
 	transCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		TLSClientConfig:   &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		DisableKeepAlives: true,
 	}
 	client := &http.Client{Transport: transCfg}
 	resp, err := client.Do(req)
-
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		rlog.Error(err.Error())
 		return nil, err
 	}
-	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		return nil, NewError("Incorrect Status code")
 	}
@@ -1001,16 +1034,18 @@ func (s *Service) getHvacSetupInputs(IP string, token string) (*core.HvacInputVa
 	req.Header.Set("authorization", "Bearer "+token)
 	req.Close = true
 	transCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		TLSClientConfig:   &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		DisableKeepAlives: true,
 	}
 	client := &http.Client{Transport: transCfg}
 	resp, err := client.Do(req)
-
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		rlog.Error(err.Error())
 		return nil, err
 	}
-	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		return nil, NewError("Incorrect Status code")
 	}
@@ -1034,16 +1069,18 @@ func (s *Service) getHvacMaintenanceOutputs(IP string, token string) (*core.Hvac
 	req.Header.Set("authorization", "Bearer "+token)
 	req.Close = true
 	transCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		TLSClientConfig:   &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		DisableKeepAlives: true,
 	}
 	client := &http.Client{Transport: transCfg}
 	resp, err := client.Do(req)
-
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		rlog.Error(err.Error())
 		return nil, err
 	}
-	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		return nil, NewError("Incorrect Status code")
 	}
@@ -1067,16 +1104,18 @@ func (s *Service) getHvacSetupOutputs(IP string, token string) (*core.HvacOutput
 	req.Header.Set("authorization", "Bearer "+token)
 	req.Close = true
 	transCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		TLSClientConfig:   &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		DisableKeepAlives: true,
 	}
 	client := &http.Client{Transport: transCfg}
 	resp, err := client.Do(req)
-
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		rlog.Error(err.Error())
 		return nil, err
 	}
-	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		return nil, NewError("Incorrect Status code")
 	}
@@ -1138,11 +1177,14 @@ func (s *Service) hvacInit(setup dhvac.HvacSetup, IP string, token string) error
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("authorization", "Bearer "+token)
 	transCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		TLSClientConfig:   &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		DisableKeepAlives: true,
 	}
 	client := &http.Client{Transport: transCfg}
-	_, err = client.Do(req)
-
+	resp, err := client.Do(req)
+	if resp != nil {
+		resp.Body.Close()
+	}
 	if err != nil {
 		rlog.Error(err.Error())
 		return err
@@ -1190,7 +1232,10 @@ func (s *Service) hvacSetAFConfig(setup dhvac.HvacConf, IP string, token string)
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
 	}
 	client := &http.Client{Transport: transCfg}
-	_, err = client.Do(req)
+	resp, err := client.Do(req)
+	if resp != nil {
+		resp.Body.Close()
+	}
 
 	if err != nil {
 		rlog.Error(err.Error())
