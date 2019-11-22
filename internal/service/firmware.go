@@ -3,7 +3,6 @@ package service
 import (
 	"bytes"
 	"io"
-	"net/http"
 	"os"
 	"os/exec"
 	"strings"
@@ -56,7 +55,6 @@ type Service struct {
 
 //Initialize service
 func (s *Service) Initialize(confFile string) error {
-	http.DefaultClient.Timeout = time.Second * 40
 	s.events = make(chan string)
 	s.hvacs = cmap.New()
 	s.driversSeen = cmap.New()
