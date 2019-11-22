@@ -182,6 +182,19 @@ func (s *Service) Stop() {
 	rlog.Info("rest2mqtt service stopped")
 }
 
+func (s *Service) cronRefreshData() {
+	timerDump := time.NewTicker(s.timerDump * time.Millisecond)
+	for {
+		select {
+		case <-timerDump.C:
+			for _, v := range s.hvacs.Items() {
+				driver, _ := dhvac.ToHvac(v)
+				go s.sendRefresh(*driver)
+			}
+		}
+	}
+}
+
 func (s *Service) cronDump() {
 	timerDump := time.NewTicker(s.timerDump * time.Millisecond)
 	for {
@@ -213,6 +226,7 @@ func (s *Service) cronNmap() {
 func (s *Service) Run() error {
 	go s.cronDump()
 	go s.cronNmap()
+	go s.cronRefreshData()
 	for {
 		select {
 		case evtUpdate := <-s.local.EventsConf:

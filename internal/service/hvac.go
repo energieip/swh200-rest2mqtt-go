@@ -41,13 +41,11 @@ func (s *Service) sendHello(driver dhvac.Hvac) {
 	}
 }
 
-func (s *Service) sendDump(status dhvac.Hvac) {
+func (s *Service) sendRefresh(status dhvac.Hvac) {
 	token, err := s.hvacLogin(status.IP)
 	if err != nil {
 		status.Error = 1
 		s.hvacs.Set(strings.ToUpper(status.Mac), status)
-		dump, _ := status.ToJSON()
-		s.local.SendCommand("/read/hvac/"+status.Mac+"/"+pconst.UrlStatus, dump)
 		return
 	}
 	s.driversSeen.Set(strings.ToUpper(status.Mac), time.Now().UTC())
@@ -56,8 +54,6 @@ func (s *Service) sendDump(status dhvac.Hvac) {
 	if err != nil {
 		status.Error = 2
 		s.hvacs.Set(strings.ToUpper(status.Mac), status)
-		dump, _ := status.ToJSON()
-		s.local.SendCommand("/read/hvac/"+status.Mac+"/"+pconst.UrlStatus, dump)
 		return
 	}
 	status.LinePower = 10
@@ -72,8 +68,6 @@ func (s *Service) sendDump(status dhvac.Hvac) {
 	if maintenance == nil {
 		status.Error = 2
 		s.hvacs.Set(strings.ToUpper(status.Mac), status)
-		dump, _ := status.ToJSON()
-		s.local.SendCommand("/read/hvac/"+status.Mac+"/"+pconst.UrlStatus, dump)
 		return
 	}
 	if maintenance.Running != true {
@@ -88,8 +82,6 @@ func (s *Service) sendDump(status dhvac.Hvac) {
 	if err != nil {
 		status.Error = 2
 		s.hvacs.Set(strings.ToUpper(status.Mac), status)
-		dump, _ := status.ToJSON()
-		s.local.SendCommand("/read/hvac/"+status.Mac+"/"+pconst.UrlStatus, dump)
 		return
 	}
 
@@ -97,24 +89,18 @@ func (s *Service) sendDump(status dhvac.Hvac) {
 	if err != nil {
 		status.Error = 2
 		s.hvacs.Set(strings.ToUpper(status.Mac), status)
-		dump, _ := status.ToJSON()
-		s.local.SendCommand("/read/hvac/"+status.Mac+"/"+pconst.UrlStatus, dump)
 		return
 	}
 	inputValues, err := s.getHvacSetupInputs(status.IP, token)
 	if err != nil {
 		status.Error = 2
 		s.hvacs.Set(strings.ToUpper(status.Mac), status)
-		dump, _ := status.ToJSON()
-		s.local.SendCommand("/read/hvac/"+status.Mac+"/"+pconst.UrlStatus, dump)
 		return
 	}
 	outputValues, err := s.getHvacSetupOutputs(status.IP, token)
 	if err != nil {
 		status.Error = 2
 		s.hvacs.Set(strings.ToUpper(status.Mac), status)
-		dump, _ := status.ToJSON()
-		s.local.SendCommand("/read/hvac/"+status.Mac+"/"+pconst.UrlStatus, dump)
 		return
 	}
 
@@ -144,8 +130,6 @@ func (s *Service) sendDump(status dhvac.Hvac) {
 	if err != nil {
 		status.Error = 2
 		s.hvacs.Set(strings.ToUpper(status.Mac), status)
-		dump, _ := status.ToJSON()
-		s.local.SendCommand("/read/hvac/"+status.Mac+"/"+pconst.UrlStatus, dump)
 		return
 	}
 
@@ -156,7 +140,9 @@ func (s *Service) sendDump(status dhvac.Hvac) {
 	status.Error = 0
 
 	s.hvacs.Set(strings.ToUpper(status.Mac), status)
+}
 
+func (s *Service) sendDump(status dhvac.Hvac) {
 	dump, _ := status.ToJSON()
 	s.local.SendCommand("/read/hvac/"+status.Mac+"/"+pconst.UrlStatus, dump)
 }
