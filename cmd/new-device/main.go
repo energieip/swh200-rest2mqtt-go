@@ -94,7 +94,7 @@ func main() {
 	rlog.UpdateEnv()
 
 	user := core.Device{
-		Mac: newMac,
+		Mac: strings.ToUpper(newMac),
 		IP:  newIP,
 	}
 

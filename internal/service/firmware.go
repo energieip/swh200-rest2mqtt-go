@@ -116,7 +116,7 @@ func (s *Service) coldBootStart() {
 		if len(elts) != 2 {
 			continue
 		}
-		mac := elts[1]
+		mac := strings.ToUpper(elts[1])
 		ip := elts[0]
 		if strings.HasPrefix(mac, "F2:23") {
 			// rlog.Info("Skip EIP device: ", mac)
@@ -157,7 +157,7 @@ func (s *Service) nmapScan() {
 		if len(elts) != 2 {
 			continue
 		}
-		mac := elts[1]
+		mac := strings.ToUpper(elts[1])
 		ip := elts[0]
 		if strings.HasPrefix(mac, "F2:23") {
 			continue

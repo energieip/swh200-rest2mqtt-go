@@ -44,6 +44,7 @@ func (s *Service) sendHello(driver dhvac.Hvac) {
 func (s *Service) sendRefresh(status dhvac.Hvac) {
 	token, err := s.hvacLogin(status.IP)
 	if err != nil {
+		rlog.Error("Cannot Login to " + status.Mac)
 		status.Error = 1
 		s.hvacs.Set(strings.ToUpper(status.Mac), status)
 		return
@@ -52,6 +53,7 @@ func (s *Service) sendRefresh(status dhvac.Hvac) {
 
 	info, err := s.hvacGetStatus(status.IP, token)
 	if err != nil {
+		rlog.Error("Cannot get status from " + status.Mac)
 		status.Error = 2
 		s.hvacs.Set(strings.ToUpper(status.Mac), status)
 		return
@@ -67,6 +69,7 @@ func (s *Service) sendRefresh(status dhvac.Hvac) {
 	maintenance, _ := s.getHvacMaintenanceMode(status.IP, token)
 	if maintenance == nil {
 		status.Error = 2
+		rlog.Error("Cannot get maintenance info from " + status.Mac)
 		s.hvacs.Set(strings.ToUpper(status.Mac), status)
 		return
 	}
@@ -81,6 +84,7 @@ func (s *Service) sendRefresh(status dhvac.Hvac) {
 	infoSetpoint, err := s.getHvacSetpoints(status.IP, token)
 	if err != nil {
 		status.Error = 2
+		rlog.Error("Cannot get hvacSetpoints info from " + status.Mac)
 		s.hvacs.Set(strings.ToUpper(status.Mac), status)
 		return
 	}
@@ -88,18 +92,21 @@ func (s *Service) sendRefresh(status dhvac.Hvac) {
 	infoRegul, err := s.getHvacSetupRegulation(status.IP, token)
 	if err != nil {
 		status.Error = 2
+		rlog.Error("Cannot get hvacSetupRegulation info from " + status.Mac)
 		s.hvacs.Set(strings.ToUpper(status.Mac), status)
 		return
 	}
 	inputValues, err := s.getHvacSetupInputs(status.IP, token)
 	if err != nil {
 		status.Error = 2
+		rlog.Error("Cannot get hvacSetupInputs info from " + status.Mac)
 		s.hvacs.Set(strings.ToUpper(status.Mac), status)
 		return
 	}
 	outputValues, err := s.getHvacSetupOutputs(status.IP, token)
 	if err != nil {
 		status.Error = 2
+		rlog.Error("Cannot get hvacSetupOutputs info from " + status.Mac)
 		s.hvacs.Set(strings.ToUpper(status.Mac), status)
 		return
 	}
@@ -129,6 +136,7 @@ func (s *Service) sendRefresh(status dhvac.Hvac) {
 	testValues, err := s.getHvacMaintenanceOutputs(status.IP, token)
 	if err != nil {
 		status.Error = 2
+		rlog.Error("Cannot get maintenance output info from " + status.Mac)
 		s.hvacs.Set(strings.ToUpper(status.Mac), status)
 		return
 	}
@@ -227,6 +235,7 @@ func (s *Service) receivedHvacUpdate(conf dhvac.HvacConf) {
 
 	token, err := s.hvacLogin(hvac.IP)
 	if err != nil {
+		rlog.Error("Cannot get token info from " + conf.Mac)
 		return
 	}
 	s.setHvacRuntime(conf, *hvac, hvac.IP, token)
@@ -319,6 +328,7 @@ func (s *Service) reloadHvac(new interface{}) error {
 	hvac, ok := s.hvacs.Get(strings.ToUpper(driver.Mac))
 	if ok {
 		// check for IP changing
+		rlog.Info("Change IP info for " + driver.IP + " to " + driver.IP)
 		d, _ := dhvac.ToHvac(hvac)
 		d.IP = driver.IP
 		s.hvacs.Set(strings.ToUpper(d.Mac), d)
@@ -557,7 +567,11 @@ func (s *Service) setHvacRuntime(conf dhvac.HvacConf, status dhvac.Hvac, IP stri
 				}
 				param.Regulation.HeatCool = conf.HeatCool
 			} else {
-				s.setHvacMaintenanceBackMode(status.IP, token)
+				_, err := s.setHvacMaintenanceBackMode(status.IP, token)
+				if err != nil {
+					rlog.Error("Cannot leave test mode", err.Error())
+					return err
+				}
 				rlog.Info("HVAC leave test mode", status.Mac)
 			}
 		} else {
@@ -565,10 +579,12 @@ func (s *Service) setHvacRuntime(conf dhvac.HvacConf, status dhvac.Hvac, IP stri
 			err := s.setHvacMaintenanceMode(conf, status, status.IP, token)
 			if err != nil {
 				rlog.Error("Cannot switch in test mode", err)
+				return err
 			}
 			err = s.setHvacMaintenanceParam(conf, status, status.IP, token)
 			if err != nil {
 				rlog.Error("Cannot prepare test mode", err)
+				return err
 			}
 		}
 		rlog.Infof("Switch HVAC " + status.Mac + ": in " + strconv.Itoa(*conf.HeatCool))
@@ -578,6 +594,7 @@ func (s *Service) setHvacRuntime(conf dhvac.HvacConf, status dhvac.Hvac, IP stri
 		err := s.setHvacMaintenanceParam(conf, status, status.IP, token)
 		if err != nil {
 			rlog.Error("Cannot send in test mode parameters ", err)
+			return err
 		}
 	}
 
