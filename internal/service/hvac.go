@@ -293,9 +293,9 @@ func (s *Service) newHvac(new interface{}) error {
 		rlog.Info("Retry connection to HVAC ", driver.Mac)
 		token, err = s.hvacLogin(driver.IP)
 		if err != nil {
-			rlog.Info("Try to update from modbus to REST")
+			rlog.Info("Try to update from modbus to REST", driver.Mac)
 			errF := s.updateHvac(driver.IP)
-			rlog.Error("Update arcom", errF)
+			rlog.Error("Update arcom", errF, driver.Mac)
 			return err
 		}
 	}
@@ -328,8 +328,8 @@ func (s *Service) reloadHvac(new interface{}) error {
 	hvac, ok := s.hvacs.Get(strings.ToUpper(driver.Mac))
 	if ok {
 		// check for IP changing
-		rlog.Info("Change IP info for " + driver.IP + " to " + driver.IP)
 		d, _ := dhvac.ToHvac(hvac)
+		rlog.Info("Change IP info for " + driver.Mac + " to " + driver.IP + " (was IP: " + d.IP + " )")
 		d.IP = driver.IP
 		s.hvacs.Set(strings.ToUpper(d.Mac), d)
 		return nil
