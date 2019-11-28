@@ -283,6 +283,43 @@ func (s *Service) updateHvac(IP string) error {
 	return nil
 }
 
+func (s *Service) updateHvacNewAPI(IP string, token string) error {
+	url := "https://" + IP + "/api/updateParam"
+
+	config := core.HvacUpdateParams{
+		TftpServerIP: "10.0.0.2",
+		StartUpdate:  true,
+	}
+
+	requestBody, err := json.Marshal(config)
+	if err != nil {
+		return err
+	}
+
+	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("x-access-token", token)
+	req.Close = true
+	transCfg := &http.Transport{
+		TLSClientConfig:   &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+		DisableKeepAlives: true,
+	}
+	client := &http.Client{Transport: transCfg}
+	resp, err := client.Do(req)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+	if err != nil {
+		rlog.Error(err.Error())
+		return err
+	}
+	if resp.StatusCode != 200 {
+		return NewError("Incorrect Status code: " + strconv.Itoa((resp.StatusCode)))
+	}
+	rlog.Info("Update finished successfully")
+	return nil
+}
+
 func (s *Service) newHvac(new interface{}) error {
 	driver, err := core.ToDevice(new)
 	if err != nil || driver == nil {
@@ -306,6 +343,13 @@ func (s *Service) newHvac(new interface{}) error {
 
 	info, err := s.hvacGetVersion(driver.IP, token)
 	if err != nil || info == nil {
+		return err
+	}
+	rlog.Infof("For %v (%v) Get version %v and expect %v", driver.Mac, driver.IP, info.SoftwareVersion, s.conf.ClientAPI.APIVersion)
+	if info.SoftwareVersion != s.conf.ClientAPI.APIVersion {
+		time.Sleep(50 * time.Millisecond)
+		errF := s.updateHvacNewAPI(driver.IP, token)
+		rlog.Error("Update arcom", errF, driver.Mac)
 		return err
 	}
 	hvac := dhvac.Hvac{
