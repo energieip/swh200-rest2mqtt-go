@@ -66,6 +66,7 @@ func (s *Service) sendRefresh(status dhvac.Hvac) {
 	status.DewSensor1 = info.Regulation.DewSensor
 	status.SpaceTemp1 = int(info.Regulation.SpaceTemp * 10)
 	status.HeatCool1 = info.Regulation.HeatCool
+	time.Sleep(50 * time.Millisecond)
 	maintenance, _ := s.getHvacMaintenanceMode(status.IP, token)
 	if maintenance == nil {
 		status.Error = 2
@@ -80,7 +81,7 @@ func (s *Service) sendRefresh(status dhvac.Hvac) {
 	status.HeatOutput1 = info.Regulation.HeatOutput
 	status.EffectSetPoint1 = int(info.Regulation.EffectifSetPoint * 10)
 	status.HoldOff1 = info.Regulation.WindowHoldOff
-
+	time.Sleep(50 * time.Millisecond)
 	infoSetpoint, err := s.getHvacSetpoints(status.IP, token)
 	if err != nil {
 		status.Error = 2
@@ -88,7 +89,7 @@ func (s *Service) sendRefresh(status dhvac.Hvac) {
 		s.hvacs.Set(strings.ToUpper(status.Mac), status)
 		return
 	}
-
+	time.Sleep(50 * time.Millisecond)
 	infoRegul, err := s.getHvacSetupRegulation(status.IP, token)
 	if err != nil {
 		status.Error = 2
@@ -96,6 +97,7 @@ func (s *Service) sendRefresh(status dhvac.Hvac) {
 		s.hvacs.Set(strings.ToUpper(status.Mac), status)
 		return
 	}
+	time.Sleep(50 * time.Millisecond)
 	inputValues, err := s.getHvacSetupInputs(status.IP, token)
 	if err != nil {
 		status.Error = 2
@@ -103,6 +105,7 @@ func (s *Service) sendRefresh(status dhvac.Hvac) {
 		s.hvacs.Set(strings.ToUpper(status.Mac), status)
 		return
 	}
+	time.Sleep(50 * time.Millisecond)
 	outputValues, err := s.getHvacSetupOutputs(status.IP, token)
 	if err != nil {
 		status.Error = 2
@@ -133,6 +136,7 @@ func (s *Service) sendRefresh(status dhvac.Hvac) {
 	status.OutputYa = outputValues.OutputYa
 	status.OutputYb = outputValues.OutputYb
 
+	time.Sleep(50 * time.Millisecond)
 	testValues, err := s.getHvacMaintenanceOutputs(status.IP, token)
 	if err != nil {
 		status.Error = 2
@@ -273,7 +277,7 @@ func (s *Service) updateHvac(IP string) error {
 		return err
 	}
 	if resp.StatusCode != 200 {
-		return NewError("Incorrect Status code")
+		return NewError("Incorrect Status code: " + strconv.Itoa((resp.StatusCode)))
 	}
 	rlog.Info("Update finished successfully")
 	return nil
@@ -1244,6 +1248,11 @@ func (s *Service) hvacSetAFConfig(setup dhvac.HvacConf, IP string, token string)
 	if err != nil {
 		rlog.Error(err.Error())
 		return err
+	}
+
+	if resp.StatusCode != 200 {
+		body, _ := ioutil.ReadAll(resp.Body)
+		return NewError("Incorrect Status code: " + strconv.Itoa((resp.StatusCode)) + " : " + string(body))
 	}
 	return nil
 }
