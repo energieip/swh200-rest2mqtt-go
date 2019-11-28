@@ -152,6 +152,7 @@ func (s *Service) sendRefresh(status dhvac.Hvac) {
 		s.hvacs.Set(strings.ToUpper(status.Mac), status)
 		return
 	}
+	status.SoftwareVersion = infoVersion.SoftwareVersion
 
 	status.Forcing6WaysValve = testValues.OutputY5
 	status.ForcingDamper = testValues.OutputY6
