@@ -144,6 +144,14 @@ func (s *Service) sendRefresh(status dhvac.Hvac) {
 		s.hvacs.Set(strings.ToUpper(status.Mac), status)
 		return
 	}
+	time.Sleep(100 * time.Millisecond)
+	infoVersion, err := s.hvacGetVersion(status.IP, token)
+	if err != nil || infoVersion == nil {
+		status.Error = 2
+		rlog.Error("Cannot get info version from " + status.Mac)
+		s.hvacs.Set(strings.ToUpper(status.Mac), status)
+		return
+	}
 
 	status.Forcing6WaysValve = testValues.OutputY5
 	status.ForcingDamper = testValues.OutputY6
@@ -350,7 +358,6 @@ func (s *Service) newHvac(new interface{}) error {
 		time.Sleep(50 * time.Millisecond)
 		errF := s.updateHvacNewAPI(driver.IP, token)
 		rlog.Error("Update arcom", errF, driver.Mac)
-		return err
 	}
 	hvac := dhvac.Hvac{
 		Mac:             driver.Mac,
