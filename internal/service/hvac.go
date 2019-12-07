@@ -308,6 +308,7 @@ func (s *Service) updateHvacNewAPI(IP string, token string) error {
 	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("x-access-token", token)
+	req.Header.Set("authorization", "Bearer "+token)
 	req.Close = true
 	transCfg := &http.Transport{
 		TLSClientConfig:   &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
