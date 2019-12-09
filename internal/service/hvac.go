@@ -328,7 +328,9 @@ func (s *Service) updateHvacNewAPI(IP string, token string) error {
 		return err
 	}
 	if resp.StatusCode != 200 {
-		rlog.Errorf("Received updateHvacNewAPI status code %v, body %v", resp.StatusCode, resp.Body)
+		body, _ := ioutil.ReadAll(resp.Body)
+
+		rlog.Errorf("%v Received updateHvacNewAPI status code %v, body %v", IP, resp.StatusCode, string(body))
 		return NewError("Incorrect Status code: " + strconv.Itoa((resp.StatusCode)))
 	}
 	rlog.Info("Update finished successfully")
@@ -870,7 +872,7 @@ func (s *Service) getHvacMaintenanceMode(IP string, token string) (*core.HvacTas
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if resp.StatusCode != 200 {
-		rlog.Errorf("%v Received getHvacMaintenanceMode status code %v, body %v", IP, resp.StatusCode, body)
+		rlog.Errorf("%v Received getHvacMaintenanceMode status code %v, body %v", IP, resp.StatusCode, string(body))
 		return nil, NewError("Incorrect Status code")
 	}
 
