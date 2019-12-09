@@ -49,6 +49,7 @@ func (s *Service) sendRefresh(status dhvac.Hvac) {
 		s.hvacs.Set(strings.ToUpper(status.Mac), status)
 		return
 	}
+	time.Sleep(50 * time.Millisecond)
 	s.driversSeen.Set(strings.ToUpper(status.Mac), time.Now().UTC())
 
 	info, err := s.hvacGetStatus(status.IP, token)
@@ -286,6 +287,9 @@ func (s *Service) updateHvac(IP string) error {
 		return err
 	}
 	if resp.StatusCode != 200 {
+		body, _ := ioutil.ReadAll(resp.Body)
+
+		rlog.Errorf("%v Received UpdateHvac status code %v, body %v", IP, resp.StatusCode, string(body))
 		return NewError("Incorrect Status code: " + strconv.Itoa((resp.StatusCode)))
 	}
 	rlog.Info("Update finished successfully")
@@ -324,6 +328,7 @@ func (s *Service) updateHvacNewAPI(IP string, token string) error {
 		return err
 	}
 	if resp.StatusCode != 200 {
+		rlog.Errorf("Received updateHvacNewAPI status code %v, body %v", resp.StatusCode, resp.Body)
 		return NewError("Incorrect Status code: " + strconv.Itoa((resp.StatusCode)))
 	}
 	rlog.Info("Update finished successfully")
@@ -417,6 +422,11 @@ func (s *Service) hvacGetStatus(IP string, token string) (*core.HvacLoop1, error
 
 	body, err := ioutil.ReadAll(resp.Body)
 
+	if resp.StatusCode != 200 {
+		rlog.Errorf("%v Received hvacGetStatus status code %v, body %v", IP, resp.StatusCode, string(body))
+		return nil, NewError("Incorrect Status code")
+	}
+
 	info := core.HvacLoop1{}
 	err = json.Unmarshal(body, &info)
 	if err != nil {
@@ -447,6 +457,11 @@ func (s *Service) hvacGetVersion(IP string, token string) (*core.HvacSysInfo, er
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
+
+	if resp.StatusCode != 200 {
+		rlog.Errorf("%v Received hvacGetVersion status code %v, body %v", IP, resp.StatusCode, string(body))
+		return nil, NewError("Incorrect Status code")
+	}
 
 	info := core.HvacSysInfo{}
 	err = json.Unmarshal(body, &info)
@@ -486,11 +501,11 @@ func (s *Service) hvacLogin(IP string) (string, error) {
 		rlog.Error("Cannot send request to: " + err.Error())
 		return "", err
 	}
+	body, err := ioutil.ReadAll(resp.Body)
 	if resp.StatusCode != 200 {
+		rlog.Errorf("%v Received hvacLogin status code %v, body %v", IP, resp.StatusCode, string(body))
 		return "", NewError("Incorrect Status code")
 	}
-
-	body, err := ioutil.ReadAll(resp.Body)
 
 	auth := core.HvacAuth{}
 	err = json.Unmarshal(body, &auth)
@@ -521,11 +536,12 @@ func (s *Service) getHvacSetpoints(IP string, token string) (*core.HvacSetPoints
 		rlog.Error(err.Error())
 		return nil, err
 	}
-	if resp.StatusCode != 200 {
-		return nil, NewError("Incorrect Status code")
-	}
 
 	body, err := ioutil.ReadAll(resp.Body)
+	if resp.StatusCode != 200 {
+		rlog.Errorf("%v Received getHvacSetpoints status code %v, body %v", IP, resp.StatusCode, string(body))
+		return nil, NewError("Incorrect Status code")
+	}
 
 	status := core.HvacSetPointsValues{}
 	err = json.Unmarshal(body, &status)
@@ -675,6 +691,18 @@ func (s *Service) setHvacRuntime(conf dhvac.HvacConf, status dhvac.Hvac, IP stri
 		}
 	}
 
+	if conf.ForcingAutoBack != nil {
+		if *conf.ForcingAutoBack == 1 {
+			s.setHvacMaintenanceBackMode(status.IP, token)
+			rlog.Info("HVAC leave test mode", status.Mac)
+		}
+	}
+
+	if (core.HvacLoopCtrl{}) == param {
+		rlog.Infof("No new setHvacRuntime to set skip it %v: %v", status.Mac, param)
+		return nil
+	}
+
 	requestBody, err := json.Marshal(param)
 	if err != nil {
 		return err
@@ -700,15 +728,12 @@ func (s *Service) setHvacRuntime(conf dhvac.HvacConf, status dhvac.Hvac, IP stri
 		return err
 	}
 	if resp.StatusCode != 200 {
+		body, _ := ioutil.ReadAll(resp.Body)
+
+		rlog.Errorf("%v Received setHvacRuntime status code %v, body %v", status.Mac, resp.StatusCode, string(body))
 		return NewError("Incorrect Status code")
 	}
 
-	if conf.ForcingAutoBack != nil {
-		if *conf.ForcingAutoBack == 1 {
-			s.setHvacMaintenanceBackMode(status.IP, token)
-			rlog.Info("HVAC leave test mode", status.Mac)
-		}
-	}
 	return nil
 }
 
@@ -744,6 +769,9 @@ func (s *Service) setHvacMaintenanceParam(conf dhvac.HvacConf, status dhvac.Hvac
 		return err
 	}
 	if resp.StatusCode != 200 {
+		body, _ := ioutil.ReadAll(resp.Body)
+
+		rlog.Errorf("%v Received setHvacMaintenanceParam status code %v, body %v", conf.Mac, resp.StatusCode, string(body))
 		return NewError("Incorrect Status code")
 	}
 	return nil
@@ -753,6 +781,8 @@ func (s *Service) setHvacMaintenanceMode(conf dhvac.HvacConf, status dhvac.Hvac,
 	urlTask := "https://" + IP + "/api/maintenance/hvacTaskStatus"
 
 	body := strings.NewReader(`{"running": false}`)
+
+	rlog.Infof("Send new parameters to HVAC %v: %v", status.Mac, `{"running": false}`)
 	req, _ := http.NewRequest("POST", urlTask, body)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("authorization", "Bearer "+token)
@@ -771,6 +801,9 @@ func (s *Service) setHvacMaintenanceMode(conf dhvac.HvacConf, status dhvac.Hvac,
 		return err
 	}
 	if resp.StatusCode != 200 {
+		body, _ := ioutil.ReadAll(resp.Body)
+
+		rlog.Errorf("%v Received setHvacMaintenanceMode status code %v, body %v", conf.Mac, resp.StatusCode, string(body))
 		return NewError("Incorrect Status code")
 	}
 	return nil
@@ -797,6 +830,9 @@ func (s *Service) setHvacMaintenanceBackMode(IP string, token string) (*core.Hva
 		return nil, err
 	}
 	if resp.StatusCode != 200 {
+		body, _ := ioutil.ReadAll(resp.Body)
+
+		rlog.Errorf("%v Received setHvacMaintenanceBackMode status code %v, body %v", IP, resp.StatusCode, string(body))
 		return nil, NewError("Incorrect Status code")
 	}
 
@@ -831,11 +867,12 @@ func (s *Service) getHvacMaintenanceMode(IP string, token string) (*core.HvacTas
 		rlog.Error(err.Error())
 		return nil, err
 	}
-	if resp.StatusCode != 200 {
-		return nil, NewError("Incorrect Status code")
-	}
 
 	body, err := ioutil.ReadAll(resp.Body)
+	if resp.StatusCode != 200 {
+		rlog.Errorf("%v Received getHvacMaintenanceMode status code %v, body %v", IP, resp.StatusCode, body)
+		return nil, NewError("Incorrect Status code")
+	}
 
 	status := core.HvacTask{}
 	err = json.Unmarshal(body, &status)
@@ -868,6 +905,12 @@ func (s *Service) setHvacSetupAirRegister(setup dhvac.HvacSetup, IP string, toke
 		return err
 	}
 
+	if (core.HvacSetupAirQualityCtrl{}) == config {
+		rlog.Infof("No new setHvacSetupAirRegister to set skip it %v: %v", setup.Mac, config)
+		return nil
+	}
+	rlog.Infof("Send HVAC AirRegister parameters " + setup.Mac + " : " + string(requestBody))
+
 	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("authorization", "Bearer "+token)
@@ -886,6 +929,9 @@ func (s *Service) setHvacSetupAirRegister(setup dhvac.HvacSetup, IP string, toke
 		return err
 	}
 	if resp.StatusCode != 200 {
+		body, _ := ioutil.ReadAll(resp.Body)
+
+		rlog.Errorf("%v Received setHvacSetupAirRegister status code %v, body %v", setup.Mac, resp.StatusCode, string(body))
 		return NewError("Incorrect Status code")
 	}
 
@@ -908,10 +954,16 @@ func (s *Service) setHvacSetupRegulation(setup dhvac.HvacSetup, IP string, token
 		LoopsUsed:         setup.LoopUsed,
 	}
 
+	if (core.HvacSetupRegulationCtrl{}) == config {
+		rlog.Infof("No new HvacSetupRegulationCtrl to set skip it %v: %v", setup.Mac, config)
+		return nil
+	}
 	requestBody, err := json.Marshal(config)
 	if err != nil {
 		return err
 	}
+
+	rlog.Infof("Send HVAC parameters " + setup.Mac + " : " + string(requestBody))
 
 	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
 	req.Header.Add("Content-Type", "application/json")
@@ -932,6 +984,9 @@ func (s *Service) setHvacSetupRegulation(setup dhvac.HvacSetup, IP string, token
 		return err
 	}
 	if resp.StatusCode != 200 {
+		body, _ := ioutil.ReadAll(resp.Body)
+
+		rlog.Errorf("%v Received setHvacSetupRegulation status code %v, body %v", setup.Mac, resp.StatusCode, string(body))
 		return NewError("Incorrect Status code")
 	}
 
@@ -968,10 +1023,17 @@ func (s *Service) setHvacSetupInputs(setup dhvac.HvacSetup, IP string, token str
 		config.InputC2 = setup.InputC2
 	}
 
+	if (core.HvacInput{}) == config {
+		rlog.Infof("No new setHvacSetupInputs to set skip it %v: %v", setup.Mac, config)
+		return nil
+	}
+
 	requestBody, err := json.Marshal(config)
 	if err != nil {
 		return err
 	}
+
+	rlog.Infof("Send HVAC parameters " + setup.Mac + " : " + string(requestBody))
 
 	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
 	req.Header.Add("Content-Type", "application/json")
@@ -992,6 +1054,9 @@ func (s *Service) setHvacSetupInputs(setup dhvac.HvacSetup, IP string, token str
 		return err
 	}
 	if resp.StatusCode != 200 {
+		body, _ := ioutil.ReadAll(resp.Body)
+
+		rlog.Errorf("%v Received setHvacSetupInputs status code %v, body %v", setup.Mac, resp.StatusCode, string(body))
 		return NewError("Incorrect Status code")
 	}
 
@@ -1022,10 +1087,17 @@ func (s *Service) setHvacSetupOutputs(setup dhvac.HvacSetup, IP string, token st
 		config.OutputYb = setup.OutputYb
 	}
 
+	if (core.HvacOutput{}) == config {
+		rlog.Infof("No new HvacOutput to set skip it %v: %v", setup.Mac, config)
+		return nil
+	}
+
 	requestBody, err := json.Marshal(config)
 	if err != nil {
 		return err
 	}
+
+	rlog.Infof("Send HVAC parameters " + setup.Mac + " : " + string(requestBody))
 
 	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
 	req.Header.Add("Content-Type", "application/json")
@@ -1045,6 +1117,9 @@ func (s *Service) setHvacSetupOutputs(setup dhvac.HvacSetup, IP string, token st
 		return err
 	}
 	if resp.StatusCode != 200 {
+		body, _ := ioutil.ReadAll(resp.Body)
+
+		rlog.Errorf("%v Received setHvacSetupInputs status code %v, body %v", setup.Mac, resp.StatusCode, string(body))
 		return NewError("Incorrect Status code")
 	}
 
@@ -1071,11 +1146,12 @@ func (s *Service) getHvacSetupRegulation(IP string, token string) (*core.HvacSet
 		rlog.Error(err.Error())
 		return nil, err
 	}
-	if resp.StatusCode != 200 {
-		return nil, NewError("Incorrect Status code")
-	}
 
 	body, err := ioutil.ReadAll(resp.Body)
+	if resp.StatusCode != 200 {
+		rlog.Errorf("%v Received getHvacSetupRegulation status code %v, body %v", IP, resp.StatusCode, string(body))
+		return nil, NewError("Incorrect Status code")
+	}
 
 	status := core.HvacSetupRegulation{}
 	err = json.Unmarshal(body, &status)
@@ -1106,11 +1182,13 @@ func (s *Service) getHvacSetupInputs(IP string, token string) (*core.HvacInputVa
 		rlog.Error(err.Error())
 		return nil, err
 	}
-	if resp.StatusCode != 200 {
-		return nil, NewError("Incorrect Status code")
-	}
 
 	body, err := ioutil.ReadAll(resp.Body)
+
+	if resp.StatusCode != 200 {
+		rlog.Errorf("%v Received getHvacSetupInputs status code %v, body %v", IP, resp.StatusCode, string(body))
+		return nil, NewError("Incorrect Status code")
+	}
 
 	status := core.HvacInputValues{}
 	err = json.Unmarshal(body, &status)
@@ -1141,11 +1219,13 @@ func (s *Service) getHvacMaintenanceOutputs(IP string, token string) (*core.Hvac
 		rlog.Error(err.Error())
 		return nil, err
 	}
-	if resp.StatusCode != 200 {
-		return nil, NewError("Incorrect Status code")
-	}
 
 	body, err := ioutil.ReadAll(resp.Body)
+
+	if resp.StatusCode != 200 {
+		rlog.Errorf("%v Received getHvacMaintenanceOutputs status code %v, body %v", IP, resp.StatusCode, string(body))
+		return nil, NewError("Incorrect Status code")
+	}
 
 	status := core.HvacOutputValues{}
 	err = json.Unmarshal(body, &status)
@@ -1176,11 +1256,12 @@ func (s *Service) getHvacSetupOutputs(IP string, token string) (*core.HvacOutput
 		rlog.Error(err.Error())
 		return nil, err
 	}
-	if resp.StatusCode != 200 {
-		return nil, NewError("Incorrect Status code")
-	}
 
 	body, err := ioutil.ReadAll(resp.Body)
+	if resp.StatusCode != 200 {
+		rlog.Errorf("%v Received getHvacSetupOutputs status code %v, body %v", IP, resp.StatusCode, string(body))
+		return nil, NewError("Incorrect Status code")
+	}
 
 	status := core.HvacOutputValues{}
 	err = json.Unmarshal(body, &status)
@@ -1228,10 +1309,18 @@ func (s *Service) hvacInit(setup dhvac.HvacSetup, IP string, token string) error
 		SetpointStanbyHeat: &HeatStandby,
 	}
 
+	if (core.HvacSetPoints{}) == config {
+		rlog.Infof("No new Setpoint in HvacInit to set skip it %v: %v", setup.Mac, config)
+		return nil
+	}
+
 	requestBody, err := json.Marshal(config)
 	if err != nil {
 		return err
 	}
+
+	rlog.Infof("Send HVAC parameters " + setup.Mac + " : " + string(requestBody))
+
 	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
 	req.Close = true
 	req.Header.Add("Content-Type", "application/json")
@@ -1248,6 +1337,12 @@ func (s *Service) hvacInit(setup dhvac.HvacSetup, IP string, token string) error
 	if err != nil {
 		rlog.Error(err.Error())
 		return err
+	}
+	if resp.StatusCode != 200 {
+		body, _ := ioutil.ReadAll(resp.Body)
+
+		rlog.Errorf("%v Received hvacInit status code %v, body %v", setup.Mac, resp.StatusCode, string(body))
+		return NewError("Incorrect Status code")
 	}
 	return nil
 }
@@ -1280,10 +1375,18 @@ func (s *Service) hvacSetAFConfig(setup dhvac.HvacConf, IP string, token string)
 		value := float32(*setup.SetpointHeatStandby) / 10
 		config.SetpointStanbyHeat = &value
 	}
+
+	if (core.HvacSetPoints{}) == config {
+		rlog.Infof("No new Setpoint to set skip it %v : %v", setup.Mac, config)
+		return nil
+	}
+
 	requestBody, err := json.Marshal(config)
 	if err != nil {
 		return err
 	}
+	rlog.Infof("Send HVAC parameters " + setup.Mac + " : " + string(requestBody))
+
 	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
 	req.Close = true
 	req.Header.Add("Content-Type", "application/json")
@@ -1305,6 +1408,8 @@ func (s *Service) hvacSetAFConfig(setup dhvac.HvacConf, IP string, token string)
 
 	if resp.StatusCode != 200 {
 		body, _ := ioutil.ReadAll(resp.Body)
+		rlog.Errorf("%v Received hvacSetAFConfig status code %v, body %v", setup.Mac, resp.StatusCode, string(body))
+
 		return NewError("Incorrect Status code: " + strconv.Itoa((resp.StatusCode)) + " : " + string(body))
 	}
 	return nil
